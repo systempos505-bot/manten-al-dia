@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mantén al Día</title>
+  <meta name="theme-color" content="#2563eb" />
+  <style>
+    :root{
+      --bg:#f3f4f6;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--blue:#2563eb;--green:#0f9d58;--yellow:#f4b400;--red:#db4437;--shadow:0 10px 30px rgba(15,23,42,.08)
+    }
+    *{box-sizing:border-box} html,body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select,textarea{font:inherit}
+    .app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+    .sidebar{background:linear-gradient(180deg,#111827,#1f2937);color:#fff;padding:24px;display:flex;flex-direction:column;gap:18px}
+    .brand{display:flex;align-items:center;gap:12px}.logo{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.13);display:grid;place-items:center;font-size:24px}
+    .muted{color:var(--muted)} .sidebar .muted{color:#cbd5e1}
+    .nav{display:grid;gap:8px}.nav button{border:0;background:transparent;color:#cbd5e1;text-align:left;padding:14px 16px;border-radius:14px;font-weight:700;cursor:pointer}.nav button.active{background:rgba(255,255,255,.12);color:#fff}
+    .main{padding:24px}
+    .hero{background:linear-gradient(135deg,#0f172a,#2563eb);color:#fff;border-radius:24px;padding:24px;display:flex;justify-content:space-between;gap:16px;align-items:center;box-shadow:var(--shadow)}
+    .hero h1{margin:0 0 8px;font-size:30px}.hero p{margin:0;color:rgba(255,255,255,.88);max-width:700px;line-height:1.45}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{border:0;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer}.btn.primary{background:var(--blue);color:#fff}.btn.secondary{background:#e5e7eb;color:#111827}.btn.ghost{background:transparent;color:var(--blue)}.btn.small{padding:10px 12px;font-size:14px}.btn.danger{background:#fee2e2;color:#b91c1c}.btn.warning{background:#eff6ff;color:#1d4ed8}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:20px 0 12px}
+    .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    .grid2{display:grid;grid-template-columns:1.2fr .9fr;gap:16px;align-items:start}
+    .card{background:var(--card);border:1px solid rgba(229,231,235,.9);border-radius:20px;padding:18px;box-shadow:var(--shadow)}
+    .metric .value{font-size:28px;font-weight:800;margin-bottom:6px}
+    .stack{display:grid;gap:12px}.meta{color:#4b5563;font-size:14px;line-height:1.5;margin-top:8px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .badge{display:inline-flex;padding:8px 12px;border-radius:999px;font-size:12px;font-weight:800}.al-dia{background:rgba(15,157,88,.12);color:var(--green)}.proximo{background:rgba(244,180,0,.14);color:#a16207}.vencido{background:rgba(219,68,55,.12);color:var(--red)}
+    .hidden{display:none !important}.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{background:#e5e7eb;border:0;padding:10px 12px;border-radius:999px;font-weight:700;cursor:pointer}.chip.active{background:#dbeafe;color:#1d4ed8}
+    .empty{padding:24px;text-align:center;border:1px dashed #cbd5e1;border-radius:20px;background:#fff;color:var(--muted)}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.42);display:grid;place-items:center;padding:20px}.modal{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:24px;padding:20px;box-shadow:0 30px 90px rgba(15,23,42,.2)}
+    .form{display:grid;gap:12px}.field{display:grid;gap:8px}.field label{font-weight:700;color:#374151;font-size:14px} input,select,textarea{width:100%;border:1px solid var(--line);background:#f9fafb;border-radius:14px;padding:12px 14px;color:var(--text)} textarea{min-height:94px;resize:vertical}
+    .inline{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.notice{margin-top:14px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;padding:12px 14px;border-radius:14px}
+    .sticky{position:sticky;top:24px}.pill{display:inline-flex;padding:6px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700}
+    .footer{margin-top:auto;font-size:13px;color:#cbd5e1}.category-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.category-name{font-weight:700}.inline input{flex:1;min-width:220px}
+    @media (max-width: 980px){.app{grid-template-columns:1fr}.sidebar{padding:18px}.nav{grid-template-columns:repeat(5,1fr)}.nav button{text-align:center;padding:12px 8px;font-size:13px}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.sticky{position:static}.main{padding:16px}.hero{flex-direction:column;align-items:flex-start}}
+    @media (max-width: 640px){.grid4{grid-template-columns:1fr}.nav{grid-template-columns:repeat(2,1fr)}.btn.block-mobile{width:100%}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div>
+        <div class="brand"><div class="logo">🛠️</div><div><h2 style="margin:0">Mantén al Día</h2><div class="muted">App local de mantenimiento</div></div></div>
+        <div class="nav" style="margin-top:18px">
+          <button data-tab="dashboard" class="active">Inicio</button>
+          <button data-tab="assets">Activos</button>
+          <button data-tab="calendar">Calendario</button>
+          <button data-tab="history">Historial</button>
+          <button data-tab="settings">Ajustes</button>
+        </div>
+      </div>
+      <div class="footer">Tus datos se guardan en este navegador.</div>
+    </aside>
+
+    <main class="main">
+      <section id="dashboard-tab" class="tab">
+        <div class="hero">
+          <div>
+            <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.75;margin-bottom:8px">Lista para usar</div>
+            <h1>Mantén al Día</h1>
+            <p>Registra vehículos y equipos, programa mantenimientos y captura los datos del cliente al crear el servicio.</p>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="openAssetBtn">Nuevo activo</button>
+            <button class="btn secondary" id="openMaintenanceBtn">Nuevo mantenimiento</button>
+          </div>
+        </div>
+        <div id="noticeBox" class="notice hidden"></div>
+        <div class="grid4" style="margin-top:18px" id="metricGrid"></div>
+        <div class="topbar"><h2 style="margin:0">Próximos mantenimientos</h2></div>
+        <div id="upcomingList" class="stack"></div>
+      </section>
+
+      <section id="assets-tab" class="tab hidden">
+        <div class="topbar">
+          <h2 style="margin:0">Mis activos</h2>
+          <button class="btn primary" id="openAssetBtn2">Agregar</button>
+        </div>
+        <div class="grid2">
+          <div id="assetList" class="stack"></div>
+          <div class="card sticky" id="assetDetail"></div>
+        </div>
+      </section>
+
+      <section id="calendar-tab" class="tab hidden">
+        <div class="topbar">
+          <h2 style="margin:0">Calendario</h2>
+          <button class="btn primary" id="openMaintenanceBtn2">Agregar mantenimiento</button>
+        </div>
+        <div id="calendarList" class="stack"></div>
+      </section>
+
+      <section id="history-tab" class="tab hidden">
+        <div class="topbar"><h2 style="margin:0">Historial</h2></div>
+        <div id="historyList" class="stack"></div>
+      </section>
+
+      <section id="settings-tab" class="tab hidden">
+        <div class="topbar"><h2 style="margin:0">Ajustes</h2></div>
+        <div class="stack">
+          <div class="card">
+            <h3 style="margin:0 0 8px">Respaldo</h3>
+            <p class="meta" style="margin-top:0">Exporta o importa tus datos en JSON.</p>
+            <div class="inline">
+              <button class="btn primary" id="exportBtn">Exportar datos</button>
+              <label class="btn secondary" for="importFile" style="cursor:pointer">Importar datos</label>
+              <input type="file" id="importFile" accept="application/json" class="hidden" />
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px">Categorías</h3>
+            <p class="meta" style="margin-top:0">Crea, edita y elimina las categorías que usarás en tus activos.</p>
+            <div class="inline">
+              <button class="btn primary" id="openCategoryBtn">Gestionar categorías</button>
+            </div>
+            <div id="settingsCategoryList" class="stack" style="margin-top:12px"></div>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px">Notificaciones</h3>
+            <p class="meta" style="margin-top:0">Activa avisos del navegador para mantenimientos que vencen hoy o ya están vencidos.</p>
+            <div class="inline">
+              <button class="btn primary" id="enableNotificationsBtn">Activar notificaciones</button>
+              <button class="btn secondary" id="testNotificationBtn">Probar aviso</button>
+              <button class="btn secondary" id="disableNotificationsBtn">Desactivar</button>
+            </div>
+            <p class="meta" id="notificationStatus" style="margin-top:12px"></p>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px">Plan actual</h3>
+            <p class="meta" style="margin-top:0">Versión local. No usa nube ni login.</p>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px">Siguiente mejora</h3>
+            <p class="meta" style="margin-top:0">Conectar Firebase para respaldo, multiusuario y notificaciones reales.</p>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 8px">Borrar todo</h3>
+            <p class="meta" style="margin-top:0">Elimina todos los activos y mantenimientos guardados en este navegador.</p>
+            <button class="btn danger" id="resetBtn">Borrar datos</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="assetModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="row"><h3 id="assetModalTitle" style="margin:0">Nuevo activo</h3><button class="btn secondary closeAsset">Cerrar</button></div>
+      <div class="form" style="margin-top:14px">
+        <div class="field"><label>Nombre</label><input id="assetName" placeholder="Ej. Toyota Corolla 2018" /></div>
+        <div class="field"><label>Marca</label><input id="assetBrand" placeholder="Marca" /></div>
+        <div class="field"><label>Modelo</label><input id="assetModel" placeholder="Modelo" /></div>
+        <div class="field"><label>Número de serie</label><input id="assetSerial" placeholder="Serie" /></div>
+        <div class="field"><label>Fecha de compra</label><input id="assetPurchaseDate" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" /></div>
+        <div class="field"><label>Notas</label><textarea id="assetNotes" placeholder="Notas"></textarea></div>
+        <div class="field">
+          <label>Categoría</label>
+          <div class="chips" id="assetCategoryChips"></div>
+        </div>
+      </div>
+      <div class="inline"><button class="btn primary" id="saveAssetBtn">Guardar</button><button class="btn secondary closeAsset">Cancelar</button></div>
+    </div>
+  </div>
+
+  <div id="maintenanceModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="row"><h3 id="maintenanceModalTitle" style="margin:0">Nuevo mantenimiento</h3><button class="btn secondary closeMaintenance">Cerrar</button></div>
+      <div class="form" style="margin-top:14px">
+        <div class="field"><label>Activo</label><select id="maintenanceAsset"></select></div>
+        <div class="field"><label>Título</label><input id="maintenanceTitle" placeholder="Ej. Cambio de aceite" /></div>
+        <div class="field"><label>Descripción</label><textarea id="maintenanceDescription" placeholder="Descripción"></textarea></div>
+        <div class="field"><label>Costo</label><input id="maintenanceCost" type="number" min="0" step="0.01" placeholder="0" /></div>
+        <div class="field"><label>Proveedor / Técnico</label><input id="maintenanceProvider" placeholder="Proveedor" /></div>
+        <div class="card" style="padding:14px;margin:0 0 4px">
+          <div class="row"><strong>Datos del cliente</strong><span class="muted" id="maintenanceClientHint">Se guardan en el activo seleccionado</span></div>
+          <div class="form" style="margin-top:12px">
+            <div class="field"><label>Nombre del cliente</label><input id="maintenanceClientName" placeholder="Nombre del cliente" /></div>
+            <div class="field"><label>Celular</label><input id="maintenanceClientPhone" placeholder="Ej. 8888-8888" /></div>
+            <div class="field"><label>Dirección</label><input id="maintenanceClientAddress" placeholder="Dirección" /></div>
+            <div class="field"><label>Ciudad</label><input id="maintenanceClientCity" placeholder="Ciudad" /></div>
+          </div>
+        </div>
+        <div class="field"><label>Fecha</label><input id="maintenanceDueDate" type="text" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" /></div>
+        <div class="field"><label>Estado</label><div class="chips" id="statusChips"></div></div>
+        <div class="field"><label>Frecuencia</label><div class="chips" id="frequencyChips"></div></div>
+        <div class="field"><label><input id="maintenanceRecurring" type="checkbox" checked /> Generar próximo recordatorio automáticamente</label></div>
+      </div>
+      <div class="inline"><button class="btn primary" id="saveMaintenanceBtn">Guardar</button><button class="btn secondary closeMaintenance">Cancelar</button></div>
+    </div>
+  </div>
+
+  <div id="categoryModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="row"><h3 style="margin:0">Gestionar categorías</h3><button class="btn secondary closeCategory">Cerrar</button></div>
+      <div class="form" style="margin-top:14px">
+        <div class="field">
+          <label>Nueva categoría</label>
+          <div class="inline" style="margin-top:0">
+            <input id="newCategoryName" placeholder="Ej. Impresora" />
+            <button class="btn primary" id="addCategoryBtn">Agregar</button>
+          </div>
+        </div>
+      </div>
+      <div id="categoryManagerList" class="stack" style="margin-top:14px"></div>
+      <div class="inline"><button class="btn secondary closeCategory">Cerrar</button></div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'manten-al-dia-local-v1';
+    const DEFAULT_CATEGORIES = ['Carro','Moto','Aire acondicionado','Computadora','Planta eléctrica','Maquinaria','Otro'];
+    const FREQUENCIES = ['Mensual','Trimestral','Semestral','Anual'];
+    const STATUSES = ['Al día','Próximo','Vencido'];
+    const initialAssets = [
+      {id:'1',name:'Toyota Corolla 2018',category:'Carro',brand:'Toyota',model:'Corolla',serialNumber:'JTDBR32E123456789',purchaseDate:'2023-01-10',clientName:'Juan Pérez',clientPhone:'8888-1111',clientAddress:'Residencial Las Flores, casa 14',clientCity:'Managua',notes:'Uso diario para trabajo.',maintenanceRecords:[
+        {id:'m1',title:'Cambio de aceite',description:'Usar aceite sintético 5W-30.',cost:55,provider:'Lubricentro Central',dueDate:'2026-03-25',status:'Próximo',isRecurring:true,frequency:'Trimestral'},
+        {id:'m2',title:'Revisión de frenos',description:'Inspeccionar pastillas y discos.',cost:80,provider:'Taller El Rápido',dueDate:'2026-02-20',status:'Vencido',isRecurring:false}
+      ]},
+      {id:'2',name:'A/C Oficina',category:'Aire acondicionado',brand:'LG',model:'Dual Inverter 12000',serialNumber:'LG-AC-98231',purchaseDate:'2024-07-18',clientName:'Empresa Centro Norte',clientPhone:'8855-2200',clientAddress:'Bolonia, edificio azul',clientCity:'Managua',notes:'Instalado en oficina principal.',maintenanceRecords:[
+        {id:'m3',title:'Limpieza de filtros',description:'Mantenimiento preventivo.',cost:25,provider:'FríoTech',dueDate:'2026-04-10',status:'Al día',isRecurring:true,frequency:'Mensual'}
+      ]}
+    ];
+
+    const DEFAULT_APP_SETTINGS = {
+      notificationsEnabled: false,
+      notifiedLog: {}
+    };
+
+    const loadedData = loadData();
+    let assets = loadedData.assets;
+    let categories = loadedData.categories;
+    let appSettings = loadedData.appSettings;
+    let selectedAssetId = assets[0]?.id || '';
+    let assetCategory = categories[0] || 'Otro';
+    let maintenanceStatus = 'Próximo';
+    let maintenanceFrequency = 'Mensual';
+    let editingAssetId = null;
+    let editingMaintenance = null;
+    let notificationTimer = null;
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => new Intl.NumberFormat('es-NI',{style:'currency',currency:'USD'}).format(Number(n||0));
+    const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const statusClass = (s) => s === 'Al día' ? 'al-dia' : s === 'Próximo' ? 'proximo' : 'vencido';
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function normalizeDateInput(value){
+      const raw = String(value || '').trim();
+      if(!raw) return '';
+      if(/^\d{4}-\d{2}-\d{2}$/.test(raw)){
+        const [y,m,d] = raw.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        return dt && dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d ? raw : '';
+      }
+      const match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if(!match) return '';
+      const d = Number(match[1]), m = Number(match[2]), y = Number(match[3]);
+      const dt = new Date(y, m - 1, d);
+      return dt && dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d ? `${y}-${pad2(m)}-${pad2(d)}` : '';
+    }
+    function formatDateDisplay(value){
+      const iso = normalizeDateInput(value);
+      if(!iso) return String(value || '').trim();
+      const [y,m,d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    function dateSortValue(value){ return normalizeDateInput(value) || '9999-12-31'; }
+    function maskDateInput(el){
+      if(!el) return;
+      el.addEventListener('input', () => {
+        const digits = el.value.replace(/\D/g,'').slice(0,8);
+        let out = '';
+        if(digits.length >= 1) out += digits.slice(0,2);
+        if(digits.length >= 3) out += '/' + digits.slice(2,4);
+        else if(digits.length > 2) out += '/' + digits.slice(2);
+        if(digits.length >= 5) out += '/' + digits.slice(4,8);
+        el.value = out;
+      });
+      el.addEventListener('blur', () => {
+        const iso = normalizeDateInput(el.value);
+        if(el.value.trim() && !iso) { el.setCustomValidity('Usa formato dd/mm/yyyy'); }
+        else { el.setCustomValidity(''); if(iso) el.value = formatDateDisplay(iso); }
+      });
+    }
+
+    function todayISO(){
+      const now = new Date();
+      return `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+    }
+
+    function normalizeAppSettings(settings){
+      return {
+        ...DEFAULT_APP_SETTINGS,
+        ...(settings && typeof settings === 'object' ? settings : {}),
+        notifiedLog: settings && typeof settings.notifiedLog === 'object' && settings.notifiedLog ? settings.notifiedLog : {}
+      };
+    }
+
+    function maintenanceNotificationKey(asset, record){
+      return `${asset.id}::${record.id}::${normalizeDateInput(record.dueDate)}`;
+    }
+
+    function loadData(){
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (Array.isArray(parsed)) {
+          return { assets: normalizeAssets(parsed), categories: [...DEFAULT_CATEGORIES], appSettings: normalizeAppSettings() };
+        }
+        if (parsed && typeof parsed === 'object') {
+          return {
+            assets: normalizeAssets(parsed.assets),
+            categories: normalizeCategories(parsed.categories),
+            appSettings: normalizeAppSettings(parsed.appSettings)
+          };
+        }
+      } catch {}
+      return { assets: structuredClone(initialAssets), categories: [...DEFAULT_CATEGORIES], appSettings: normalizeAppSettings() };
+    }
+    function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({ assets, categories, appSettings })); }
+    function normalizeAssets(list){
+      return (Array.isArray(list) ? list : []).map(asset => ({
+        clientName:'', clientPhone:'', clientAddress:'', clientCity:'', maintenanceRecords:[], ...asset,
+        purchaseDate: normalizeDateInput(asset?.purchaseDate) || '',
+        maintenanceRecords: Array.isArray(asset.maintenanceRecords)
+          ? asset.maintenanceRecords.map(record => ({ ...record, dueDate: normalizeDateInput(record?.dueDate) || '' }))
+          : []
+      }));
+    }
+    function normalizeCategories(list){
+      const base = Array.isArray(list) && list.length ? list : DEFAULT_CATEGORIES;
+      const cleaned = [...new Set(base.map(x => String(x || '').trim()).filter(Boolean))];
+      return cleaned.length ? cleaned : [...DEFAULT_CATEGORIES];
+    }
+    function selectedAsset(){ return assets.find(a => a.id === selectedAssetId) || null; }
+    function allMaintenance(){ return assets.flatMap(asset => asset.maintenanceRecords.map(r => ({...r, assetId:asset.id, assetName:asset.name, category:asset.category, asset, record:r}))); }
+    function showNotice(text){ const box=$('noticeBox'); box.textContent=text; box.classList.remove('hidden'); setTimeout(()=>box.classList.add('hidden'),2600); }
+
+    function isAndroidApp(){ return typeof window !== 'undefined' && typeof AndroidBridge !== 'undefined'; }
+    function notificationSupport(){ return isAndroidApp() || (typeof window !== 'undefined' && 'Notification' in window); }
+
+    function updateNotificationStatus(){
+      const el = $('notificationStatus');
+      if(!el) return;
+      if(isAndroidApp()){
+        el.textContent = appSettings.notificationsEnabled
+          ? 'Notificaciones Android activas. La app avisará mientras esté abierta o cuando la vuelvas a abrir ese día.'
+          : 'Notificaciones Android desactivadas.';
+        return;
+      }
+      if(!notificationSupport()){
+        el.textContent = 'Este navegador no soporta notificaciones web.';
+        return;
+      }
+      const permission = Notification.permission;
+      if(appSettings.notificationsEnabled && permission === 'granted'){
+        el.textContent = 'Notificaciones activas. La app avisará mientras esté abierta o cuando la vuelvas a abrir ese día.';
+      } else if(permission === 'denied') {
+        el.textContent = 'Las notificaciones están bloqueadas en el navegador. Debes habilitarlas manualmente.';
+      } else if(appSettings.notificationsEnabled) {
+        el.textContent = 'Las notificaciones están marcadas como activas, pero el navegador aún no concedió permiso.';
+      } else {
+        el.textContent = 'Notificaciones desactivadas.';
+      }
+    }
+
+    function sendBrowserNotification(title, body){
+      if(isAndroidApp()){
+        try {
+          AndroidBridge.notify(title, body);
+          return true;
+        } catch {}
+      }
+      if(notificationSupport() && Notification.permission === 'granted'){
+        try {
+          new Notification(title, { body });
+          return true;
+        } catch {}
+      }
+      return false;
+    }
+
+    function cleanupNotificationLog(){
+      const today = todayISO();
+      const log = appSettings.notifiedLog || {};
+      const nextLog = {};
+      Object.keys(log).forEach(key => {
+        if(log[key] >= today) nextLog[key] = log[key];
+      });
+      appSettings.notifiedLog = nextLog;
+    }
+
+    function checkMaintenanceNotifications(force=false){
+      if(!appSettings.notificationsEnabled) return;
+      cleanupNotificationLog();
+      const today = todayISO();
+      const dueItems = allMaintenance()
+        .filter(item => {
+          const dueDate = normalizeDateInput(item.dueDate);
+          return dueDate && dueDate <= today;
+        })
+        .sort((a,b) => dateSortValue(a.dueDate).localeCompare(dateSortValue(b.dueDate)));
+
+      const pending = dueItems.filter(item => {
+        const key = maintenanceNotificationKey(item.asset, item.record);
+        return force || appSettings.notifiedLog[key] !== today;
+      });
+
+      if(!pending.length) return;
+
+      pending.slice(0, 6).forEach((item, index) => {
+        const dueDate = normalizeDateInput(item.dueDate);
+        const isToday = dueDate === today;
+        const title = isToday ? 'Mantenimiento para hoy' : 'Mantenimiento vencido';
+        const body = `${item.title} • ${item.asset.name} • ${formatDateDisplay(item.dueDate)}`;
+        const key = maintenanceNotificationKey(item.asset, item.record);
+        appSettings.notifiedLog[key] = today;
+        setTimeout(() => {
+          const shown = sendBrowserNotification(title, body);
+          if(!shown && index === 0) showNotice(`${title}: ${body}`);
+        }, index * 400);
+      });
+
+      saveData();
+      updateNotificationStatus();
+    }
+
+    async function enableNotifications(){
+      if(isAndroidApp()){
+        appSettings.notificationsEnabled = true;
+        saveData();
+        updateNotificationStatus();
+        showNotice('Notificaciones Android activadas.');
+        checkMaintenanceNotifications(true);
+        return;
+      }
+      if(!notificationSupport()){
+        updateNotificationStatus();
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      appSettings.notificationsEnabled = permission === 'granted';
+      saveData();
+      updateNotificationStatus();
+      if(permission === 'granted'){
+        showNotice('Notificaciones activadas.');
+        checkMaintenanceNotifications(true);
+      } else {
+        showNotice('El navegador no concedió permiso para notificaciones.');
+      }
+    }
+
+    function disableNotifications(){
+      appSettings.notificationsEnabled = false;
+      saveData();
+      updateNotificationStatus();
+      showNotice('Notificaciones desactivadas.');
+    }
+
+    function testNotification(){
+      const shown = sendBrowserNotification('Prueba de notificación', 'Tus avisos de mantenimiento están funcionando.');
+      if(!shown) showNotice(isAndroidApp() ? 'No se pudo mostrar la notificación Android.' : 'Prueba de notificación: el navegador no permitió mostrar el aviso.');
+    }
+
+    function startNotificationLoop(){
+      clearInterval(notificationTimer);
+      notificationTimer = setInterval(() => checkMaintenanceNotifications(false), 60000);
+      updateNotificationStatus();
+      checkMaintenanceNotifications(false);
+    }
+
+    function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+    function renderMetrics(){
+      const items = allMaintenance();
+      const metrics = [
+        ['Activos', assets.length],
+        ['Próximos', items.filter(x=>x.status==='Próximo').length],
+        ['Vencidos', items.filter(x=>x.status==='Vencido').length],
+        ['Costo total', fmt(items.reduce((a,b)=>a+Number(b.cost||0),0))]
+      ];
+      $('metricGrid').innerHTML = metrics.map(([label,value]) => `<div class="card metric"><div class="value">${value}</div><div class="muted">${label}</div></div>`).join('');
+    }
+
+    function maintenanceCard(item, context){
+      const editButton = `<button class="btn warning small" onclick="openEditMaintenance('${item.assetId}','${item.id}','${context}')">Editar</button>`;
+      if (context === 'history') {
+        return `
+          <div class="card">
+            <div class="row"><div><h3 style="margin:0">${escapeHtml(item.title)}</h3><div class="muted">${escapeHtml(item.assetName)}</div></div><strong>${fmt(item.cost)}</strong></div>
+            <div class="meta">Descripción: ${escapeHtml(item.description || 'Sin descripción')}</div>
+            <div class="meta">Técnico/Proveedor: ${escapeHtml(item.provider || 'No definido')}</div>
+            <div class="meta">Fecha: ${formatDateDisplay(item.dueDate)}</div>
+            <div class="inline">${editButton}</div>
+          </div>`;
+      }
+      return `
+        <div class="card">
+          <div class="row"><div><h3 style="margin:0">${escapeHtml(item.title)}</h3><div class="muted">${escapeHtml(item.assetName)}</div></div><span class="badge ${statusClass(item.status)}">${item.status}</span></div>
+          <div class="meta">Fecha: ${formatDateDisplay(item.dueDate)}</div>
+          <div class="meta">${context === 'calendar' ? `Recurrente: ${item.isRecurring ? item.frequency : 'No'}` : `Proveedor: ${escapeHtml(item.provider || 'No definido')}`}</div>
+          <div class="inline">${editButton}</div>
+        </div>`;
+    }
+
+    function renderDashboard(){
+      const items = allMaintenance().sort((a,b)=>dateSortValue(a.dueDate).localeCompare(dateSortValue(b.dueDate))).slice(0,6);
+      $('upcomingList').innerHTML = items.length ? items.map(item => maintenanceCard(item, 'dashboard')).join('') : `<div class="empty">Todavía no hay mantenimientos registrados.</div>`;
+    }
+
+    function renderAssets(){
+      $('assetList').innerHTML = assets.length ? assets.map(asset => `
+        <div class="card">
+          <div class="row"><div style="cursor:pointer;flex:1" onclick="pickAsset('${asset.id}')"><h3 style="margin:0">${escapeHtml(asset.name)}</h3><div class="muted">${asset.category}</div></div><button class="btn danger small" onclick="deleteAsset('${asset.id}')">Eliminar</button></div>
+          <div class="meta">Marca: ${escapeHtml(asset.brand)}</div>
+          <div class="meta">Modelo: ${escapeHtml(asset.model || 'N/D')}</div>
+          <div class="meta">Mantenimientos: ${asset.maintenanceRecords.length}</div>
+          <div class="inline"><button class="btn secondary small" onclick="pickAsset('${asset.id}')">Ver detalle</button><button class="btn warning small" onclick="openEditAsset('${asset.id}')">Editar</button><button class="btn primary small" onclick="openMaintenanceFor('${asset.id}')">Agregar mantenimiento</button></div>
+        </div>`).join('') : `<div class="empty">No hay activos registrados.</div>`;
+
+      const asset = selectedAsset();
+      $('assetDetail').innerHTML = asset ? `
+        <div class="row"><h3 style="margin:0">Detalle del activo</h3><button class="btn warning small" onclick="openEditAsset('${asset.id}')">Editar</button></div>
+        <div class="meta"><strong>Nombre:</strong> ${escapeHtml(asset.name)}</div>
+        <div class="meta"><strong>Categoría:</strong> ${asset.category}</div>
+        <div class="meta"><strong>Marca:</strong> ${escapeHtml(asset.brand)}</div>
+        <div class="meta"><strong>Modelo:</strong> ${escapeHtml(asset.model || 'N/D')}</div>
+        <div class="meta"><strong>Serie:</strong> ${escapeHtml(asset.serialNumber || 'N/D')}</div>
+        <div class="meta"><strong>Compra:</strong> ${formatDateDisplay(asset.purchaseDate) || 'N/D'}</div>
+        <div class="meta"><strong>Notas:</strong> ${escapeHtml(asset.notes || 'Sin notas')}</div>` : `<div class="empty">Selecciona un activo para ver el detalle.</div>`;
+    }
+
+    function renderCalendar(){
+      const items = allMaintenance().sort((a,b)=>dateSortValue(a.dueDate).localeCompare(dateSortValue(b.dueDate)));
+      $('calendarList').innerHTML = items.length ? items.map(item => maintenanceCard(item, 'calendar')).join('') : `<div class="empty">No hay fechas programadas.</div>`;
+    }
+
+    function renderHistory(){
+      const items = allMaintenance();
+      $('historyList').innerHTML = items.length ? items.map(item => maintenanceCard(item, 'history')).join('') : `<div class="empty">Aún no hay historial.</div>`;
+    }
+
+    function renderMaintenanceAssetOptions(){
+      $('maintenanceAsset').innerHTML = assets.map(asset => `<option value="${asset.id}">${escapeHtml(asset.name)}</option>`).join('');
+      if (selectedAssetId) $('maintenanceAsset').value = selectedAssetId;
+    }
+
+    function renderCategoryLists(){
+      const renderRows = (editable) => categories.map(category => {
+        const encoded = encodeURIComponent(category).replace(/'/g,'%27');
+        const usage = assets.filter(a => a.category === category).length;
+        return `
+        <div class="card category-row">
+          <div>
+            <div class="category-name">${escapeHtml(category)}</div>
+            <div class="meta" style="margin-top:4px">${usage} activo(s)</div>
+          </div>
+          ${editable ? `<div class="inline" style="margin-top:0"><button class="btn warning small" onclick="editCategoryPrompt('${encoded}')">Editar</button><button class="btn danger small" onclick="deleteCategoryPrompt('${encoded}')">Eliminar</button></div>` : ''}
+        </div>`;
+      }).join('');
+      $('settingsCategoryList').innerHTML = categories.length ? renderRows(false) : `<div class="empty">No hay categorías.</div>`;
+      $('categoryManagerList').innerHTML = categories.length ? renderRows(true) : `<div class="empty">No hay categorías.</div>`;
+    }
+
+    function renderChips(){
+      if (!categories.includes(assetCategory)) assetCategory = categories[0] || 'Otro';
+      $('assetCategoryChips').innerHTML = categories.map(x => `<button class="chip ${x===assetCategory?'active':''}" onclick="setAssetCategory(decodeURIComponent('${encodeURIComponent(x).replace(/'/g,'%27')}'))">${escapeHtml(x)}</button>`).join('');
+      $('statusChips').innerHTML = STATUSES.map(x => `<button class="chip ${x===maintenanceStatus?'active':''}" onclick="setMaintenanceStatus('${x}')">${x}</button>`).join('');
+      $('frequencyChips').innerHTML = FREQUENCIES.map(x => `<button class="chip ${x===maintenanceFrequency?'active':''}" onclick="setMaintenanceFrequency('${x}')">${x}</button>`).join('');
+    }
+
+    function renderAll(){ renderMetrics(); renderDashboard(); renderAssets(); renderCalendar(); renderHistory(); renderMaintenanceAssetOptions(); renderCategoryLists(); renderChips(); saveData(); updateNotificationStatus(); }
+
+    function setTab(tab){
+      document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+      document.querySelectorAll('.tab').forEach(s=>s.classList.add('hidden'));
+      $(tab+'-tab').classList.remove('hidden');
+    }
+
+    function pickAsset(id){ selectedAssetId=id; renderAssets(); renderMaintenanceAssetOptions(); setTab('assets'); }
+    window.pickAsset = pickAsset;
+
+    function resetAssetForm(){
+      $('assetName').value=''; $('assetBrand').value=''; $('assetModel').value=''; $('assetSerial').value=''; $('assetPurchaseDate').value=''; $('assetNotes').value='';
+      assetCategory=categories[0] || 'Otro'; editingAssetId = null; $('assetModalTitle').textContent='Nuevo activo'; $('saveAssetBtn').textContent='Guardar'; renderChips();
+    }
+    function fillMaintenanceClientFields(assetId){
+      const asset = assets.find(a => a.id === assetId) || null;
+      $('maintenanceClientName').value = asset?.clientName || '';
+      $('maintenanceClientPhone').value = asset?.clientPhone || '';
+      $('maintenanceClientAddress').value = asset?.clientAddress || '';
+      $('maintenanceClientCity').value = asset?.clientCity || '';
+      $('maintenanceClientHint').textContent = asset ? `Se guardan en ${asset.name}` : 'Se guardan en el activo seleccionado';
+    }
+    function resetMaintenanceForm(){
+      $('maintenanceTitle').value=''; $('maintenanceDescription').value=''; $('maintenanceCost').value=''; $('maintenanceProvider').value=''; $('maintenanceDueDate').value=''; $('maintenanceRecurring').checked=true;
+      $('maintenanceClientName').value=''; $('maintenanceClientPhone').value=''; $('maintenanceClientAddress').value=''; $('maintenanceClientCity').value='';
+      maintenanceStatus='Próximo'; maintenanceFrequency='Mensual'; editingMaintenance = null; $('maintenanceModalTitle').textContent='Nuevo mantenimiento'; $('saveMaintenanceBtn').textContent='Guardar'; renderChips();
+      fillMaintenanceClientFields($('maintenanceAsset')?.value || selectedAssetId || assets[0]?.id || '');
+    }
+
+    function openAssetModal(){ resetAssetForm(); $('assetModal').classList.remove('hidden'); }
+    function closeAssetModal(){ $('assetModal').classList.add('hidden'); }
+    function openMaintenanceModal(){ if(!assets.length){ showNotice('Primero crea un activo.'); return; } renderMaintenanceAssetOptions(); resetMaintenanceForm(); fillMaintenanceClientFields($('maintenanceAsset').value || selectedAssetId || assets[0]?.id || ''); $('maintenanceModal').classList.remove('hidden'); }
+    function closeMaintenanceModal(){ $('maintenanceModal').classList.add('hidden'); }
+    function openMaintenanceFor(id){ selectedAssetId=id; openMaintenanceModal(); }
+    window.openMaintenanceFor = openMaintenanceFor;
+
+    function openEditAsset(id){
+      const asset = assets.find(a => a.id === id);
+      if (!asset) return;
+      editingAssetId = id;
+      $('assetModalTitle').textContent='Editar activo';
+      $('saveAssetBtn').textContent='Guardar cambios';
+      $('assetName').value=asset.name || '';
+      $('assetBrand').value=asset.brand || '';
+      $('assetModel').value=asset.model || '';
+      $('assetSerial').value=asset.serialNumber || '';
+      $('assetPurchaseDate').value=formatDateDisplay(asset.purchaseDate || '');
+      $('assetNotes').value=asset.notes || '';
+      assetCategory=asset.category || 'Carro';
+      renderChips();
+      $('assetModal').classList.remove('hidden');
+    }
+    window.openEditAsset = openEditAsset;
+
+    function openEditMaintenance(assetId, recordId, targetTab){
+      const asset = assets.find(a => a.id === assetId);
+      const record = asset?.maintenanceRecords.find(r => r.id === recordId);
+      if (!asset || !record) return;
+      editingMaintenance = { assetId, recordId, targetTab: targetTab || 'calendar' };
+      selectedAssetId = assetId;
+      renderMaintenanceAssetOptions();
+      $('maintenanceModalTitle').textContent='Editar mantenimiento';
+      $('saveMaintenanceBtn').textContent='Guardar cambios';
+      $('maintenanceAsset').value = assetId;
+      $('maintenanceTitle').value = record.title || '';
+      $('maintenanceDescription').value = record.description || '';
+      $('maintenanceCost').value = record.cost ?? '';
+      $('maintenanceProvider').value = record.provider || '';
+      fillMaintenanceClientFields(assetId);
+      $('maintenanceDueDate').value = formatDateDisplay(record.dueDate || '');
+      $('maintenanceRecurring').checked = !!record.isRecurring;
+      maintenanceStatus = record.status || 'Próximo';
+      maintenanceFrequency = record.frequency || 'Mensual';
+      renderChips();
+      $('maintenanceModal').classList.remove('hidden');
+    }
+    window.openEditMaintenance = openEditMaintenance;
+
+    maskDateInput($('assetPurchaseDate'));
+    maskDateInput($('maintenanceDueDate'));
+
+    function saveAsset(){
+      const name=$('assetName').value.trim(), brand=$('assetBrand').value.trim(), model=$('assetModel').value.trim(), serialNumber=$('assetSerial').value.trim(), purchaseDate=normalizeDateInput($('assetPurchaseDate').value), notes=$('assetNotes').value.trim();
+      if(!name || !brand || !purchaseDate){ alert('Completa nombre, marca y fecha de compra en formato dd/mm/yyyy.'); return; }
+
+      if (editingAssetId) {
+        assets = assets.map(a => a.id === editingAssetId ? ({ ...a, name, category:assetCategory, brand, model, serialNumber, purchaseDate, notes }) : a);
+        selectedAssetId = editingAssetId;
+        closeAssetModal();
+        resetAssetForm();
+        renderAll();
+        setTab('assets');
+        showNotice('Activo actualizado.');
+        return;
+      }
+
+      const newAsset={id:uid(),name,category:assetCategory,brand,model,serialNumber,purchaseDate,clientName:'',clientPhone:'',clientAddress:'',clientCity:'',notes,maintenanceRecords:[]};
+      assets.unshift(newAsset); selectedAssetId=newAsset.id; closeAssetModal(); resetAssetForm(); renderAll(); setTab('assets'); showNotice('Activo guardado.');
+    }
+
+    function saveMaintenance(){
+      const assetId=$('maintenanceAsset').value;
+      const title=$('maintenanceTitle').value.trim(), description=$('maintenanceDescription').value.trim(), cost=Number($('maintenanceCost').value||0), provider=$('maintenanceProvider').value.trim(), dueDate=normalizeDateInput($('maintenanceDueDate').value), isRecurring=$('maintenanceRecurring').checked;
+      const clientName=$('maintenanceClientName').value.trim(), clientPhone=$('maintenanceClientPhone').value.trim(), clientAddress=$('maintenanceClientAddress').value.trim(), clientCity=$('maintenanceClientCity').value.trim();
+      if(!assetId){ alert('Primero crea un activo.'); return; }
+      if(!title || !dueDate){ alert('Completa título y fecha del mantenimiento en formato dd/mm/yyyy.'); return; }
+
+      const recordData={title,description,cost,provider,dueDate,status:maintenanceStatus,isRecurring,frequency:isRecurring?maintenanceFrequency:undefined};
+
+      if (editingMaintenance) {
+        const oldAssetId = editingMaintenance.assetId;
+        const recordId = editingMaintenance.recordId;
+        let movedRecord = null;
+        assets = assets.map(asset => {
+          if (asset.id === oldAssetId) {
+            const current = asset.maintenanceRecords.find(r => r.id === recordId);
+            if (current) movedRecord = { ...current, ...recordData, id: recordId };
+            return { ...asset, maintenanceRecords: asset.maintenanceRecords.filter(r => r.id !== recordId) };
+          }
+          return asset;
+        });
+        const finalRecord = movedRecord || { id: recordId, ...recordData };
+        assets = assets.map(asset => asset.id === assetId ? ({ ...asset, clientName, clientPhone, clientAddress, clientCity, maintenanceRecords:[finalRecord, ...asset.maintenanceRecords] }) : asset);
+        selectedAssetId = assetId;
+        const returnTab = editingMaintenance.targetTab || 'calendar';
+        closeMaintenanceModal();
+        resetMaintenanceForm();
+        renderAll();
+        setTab(returnTab);
+        showNotice('Mantenimiento actualizado.');
+        return;
+      }
+
+      const newRecord={id:uid(),...recordData};
+      assets = assets.map(a => a.id===assetId ? ({...a, clientName, clientPhone, clientAddress, clientCity, maintenanceRecords:[newRecord, ...a.maintenanceRecords]}) : a);
+      selectedAssetId=assetId; closeMaintenanceModal(); resetMaintenanceForm(); renderAll(); setTab('calendar'); showNotice('Mantenimiento guardado.');
+    }
+
+    function deleteAsset(id){ if(!confirm('¿Deseas eliminar este activo y su historial?')) return; assets=assets.filter(a=>a.id!==id); if(selectedAssetId===id) selectedAssetId=assets[0]?.id||''; renderAll(); showNotice('Activo eliminado.'); }
+    window.deleteAsset = deleteAsset;
+
+    function exportData(){
+      const payload = JSON.stringify({ assets, categories }, null, 2);
+      if(isAndroidApp()){
+        try {
+          AndroidBridge.exportBackup(payload);
+          showNotice('Elige dónde guardar el respaldo JSON.');
+          return;
+        } catch {}
+      }
+      const blob = new Blob([payload],{type:'application/json'});
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='manten-al-dia-backup.json'; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function importData(file){
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (Array.isArray(parsed)) {
+            assets = normalizeAssets(parsed);
+            categories = [...DEFAULT_CATEGORIES];
+            appSettings = normalizeAppSettings();
+          } else if (parsed && typeof parsed === 'object') {
+            assets = normalizeAssets(parsed.assets);
+            categories = normalizeCategories(parsed.categories);
+            appSettings = normalizeAppSettings(parsed.appSettings);
+          } else {
+            throw new Error('Formato inválido');
+          }
+          selectedAssetId = assets[0]?.id || '';
+          assetCategory = categories[0] || 'Otro';
+          renderAll();
+          startNotificationLoop();
+          showNotice('Datos importados.');
+        } catch { alert('El archivo no tiene un formato válido.'); }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetAll(){ if(!confirm('Esto borrará todos los datos guardados en este navegador.')) return; assets = structuredClone(initialAssets); categories = [...DEFAULT_CATEGORIES]; appSettings = normalizeAppSettings(); selectedAssetId=assets[0]?.id||''; assetCategory = categories[0] || 'Otro'; localStorage.removeItem(STORAGE_KEY); renderAll(); startNotificationLoop(); showNotice('Datos restaurados.'); }
+
+    function openCategoryModal(){ $('newCategoryName').value=''; $('categoryModal').classList.remove('hidden'); renderCategoryLists(); }
+    function closeCategoryModal(){ $('categoryModal').classList.add('hidden'); $('newCategoryName').value=''; }
+
+    function addCategory(){
+      const name = $('newCategoryName').value.trim();
+      if (!name) { alert('Escribe el nombre de la categoría.'); return; }
+      if (categories.some(c => c.toLowerCase() === name.toLowerCase())) { alert('Esa categoría ya existe.'); return; }
+      categories.push(name);
+      assetCategory = name;
+      $('newCategoryName').value='';
+      renderAll();
+      showNotice('Categoría creada.');
+    }
+
+    function editCategoryPrompt(encodedName){
+      const currentName = decodeURIComponent(encodedName);
+      const newName = prompt('Nuevo nombre de la categoría:', currentName);
+      if (newName === null) return;
+      const clean = newName.trim();
+      if (!clean) { alert('El nombre no puede quedar vacío.'); return; }
+      if (categories.some(c => c.toLowerCase() === clean.toLowerCase() && c !== currentName)) { alert('Ya existe otra categoría con ese nombre.'); return; }
+      categories = categories.map(c => c === currentName ? clean : c);
+      assets = assets.map(asset => asset.category === currentName ? ({ ...asset, category: clean }) : asset);
+      if (assetCategory === currentName) assetCategory = clean;
+      renderAll();
+      showNotice('Categoría actualizada.');
+    }
+    window.editCategoryPrompt = editCategoryPrompt;
+
+    function deleteCategoryPrompt(encodedName){
+      const currentName = decodeURIComponent(encodedName);
+      if (categories.length <= 1) { alert('Debe quedar al menos una categoría.'); return; }
+      const usage = assets.filter(asset => asset.category === currentName).length;
+      const fallback = categories.find(c => c !== currentName) || 'Otro';
+      const message = usage
+        ? `La categoría "${currentName}" se usa en ${usage} activo(s). Si la eliminas, esos activos pasarán a "${fallback}". ¿Deseas continuar?`
+        : `¿Deseas eliminar la categoría "${currentName}"?`;
+      if (!confirm(message)) return;
+      categories = categories.filter(c => c !== currentName);
+      assets = assets.map(asset => asset.category === currentName ? ({ ...asset, category: fallback }) : asset);
+      if (assetCategory === currentName) assetCategory = fallback;
+      renderAll();
+      showNotice('Categoría eliminada.');
+    }
+    window.deleteCategoryPrompt = deleteCategoryPrompt;
+
+    window.setAssetCategory = (x) => { assetCategory=x; renderChips(); };
+    window.setMaintenanceStatus = (x) => { maintenanceStatus=x; renderChips(); };
+    window.setMaintenanceFrequency = (x) => { maintenanceFrequency=x; renderChips(); };
+
+    document.querySelectorAll('.nav button').forEach(btn => btn.addEventListener('click', () => setTab(btn.dataset.tab)));
+    ['openAssetBtn','openAssetBtn2'].forEach(id => $(id).addEventListener('click', openAssetModal));
+    ['openMaintenanceBtn','openMaintenanceBtn2'].forEach(id => $(id).addEventListener('click', openMaintenanceModal));
+    document.querySelectorAll('.closeAsset').forEach(x => x.addEventListener('click', () => { closeAssetModal(); resetAssetForm(); }));
+    document.querySelectorAll('.closeMaintenance').forEach(x => x.addEventListener('click', () => { closeMaintenanceModal(); resetMaintenanceForm(); }));
+    document.querySelectorAll('.closeCategory').forEach(x => x.addEventListener('click', closeCategoryModal));
+    $('openCategoryBtn').addEventListener('click', openCategoryModal);
+    $('addCategoryBtn').addEventListener('click', addCategory);
+    $('saveAssetBtn').addEventListener('click', saveAsset);
+    $('saveMaintenanceBtn').addEventListener('click', saveMaintenance);
+    $('exportBtn').addEventListener('click', exportData);
+    $('importFile').addEventListener('change', (e) => e.target.files[0] && importData(e.target.files[0]));
+    $('enableNotificationsBtn').addEventListener('click', enableNotifications);
+    $('disableNotificationsBtn').addEventListener('click', disableNotifications);
+    $('testNotificationBtn').addEventListener('click', testNotification);
+    $('resetBtn').addEventListener('click', resetAll);
+    $('assetModal').addEventListener('click', e => { if(e.target.id==='assetModal') { closeAssetModal(); resetAssetForm(); } });
+    $('maintenanceModal').addEventListener('click', e => { if(e.target.id==='maintenanceModal') { closeMaintenanceModal(); resetMaintenanceForm(); } });
+    $('categoryModal').addEventListener('click', e => { if(e.target.id==='categoryModal') closeCategoryModal(); });
+    $('newCategoryName').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } });
+    $('maintenanceAsset').addEventListener('change', (e) => {
+      selectedAssetId = e.target.value;
+      fillMaintenanceClientFields(e.target.value);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible') checkMaintenanceNotifications(false);
+    });
+    window.addEventListener('focus', () => checkMaintenanceNotifications(false));
+
+    renderAll();
+    startNotificationLoop();
+  </script>
+</body>
+</html>
