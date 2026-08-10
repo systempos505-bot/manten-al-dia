@@ -35,7 +35,8 @@
     .inline{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.notice{margin-top:14px;background:#ecfeff;border:1px solid #a5f3fc;color:#155e75;padding:12px 14px;border-radius:14px}
     .sticky{position:sticky;top:24px}.pill{display:inline-flex;padding:6px 10px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:700}
     .footer{margin-top:auto;font-size:13px;color:#cbd5e1}.category-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.category-name{font-weight:700}.inline input{flex:1;min-width:220px}
-    @media (max-width: 980px){.app{grid-template-columns:1fr}.sidebar{padding:18px}.nav{grid-template-columns:repeat(5,1fr)}.nav button{text-align:center;padding:12px 8px;font-size:13px}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.sticky{position:static}.main{padding:16px}.hero{flex-direction:column;align-items:flex-start}}
+    .catalogGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+    @media (max-width: 980px){.app{grid-template-columns:1fr}.sidebar{padding:18px}.nav{grid-template-columns:repeat(3,1fr)}.nav button{text-align:center;padding:12px 8px;font-size:13px}.grid4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid2{grid-template-columns:1fr}.sticky{position:static}.main{padding:16px}.hero{flex-direction:column;align-items:flex-start}}
     @media (max-width: 640px){.grid4{grid-template-columns:1fr}.nav{grid-template-columns:repeat(2,1fr)}.btn.block-mobile{width:100%}}
   </style>
 </head>
@@ -49,6 +50,7 @@
           <button data-tab="assets">Activos</button>
           <button data-tab="calendar">Calendario</button>
           <button data-tab="history">Historial</button>
+          <button data-tab="catalog">Catálogo</button>
           <button data-tab="settings">Ajustes</button>
         </div>
       </div>
@@ -98,9 +100,30 @@
         <div id="historyList" class="stack"></div>
       </section>
 
+      <section id="catalog-tab" class="tab hidden">
+        <div class="topbar">
+          <h2 style="margin:0">Catálogo de productos</h2>
+          <button class="btn primary" id="openProductBtn">Agregar producto</button>
+        </div>
+        <div class="card" id="companyInfoCard" style="margin-bottom:16px"></div>
+        <div id="productList" class="catalogGrid"></div>
+      </section>
+
       <section id="settings-tab" class="tab hidden">
         <div class="topbar"><h2 style="margin:0">Ajustes</h2></div>
         <div class="stack">
+          <div class="card">
+            <h3 style="margin:0 0 8px">Ubicación de empresa</h3>
+            <p class="meta" style="margin-top:0">Estos datos aparecen automáticamente en el encabezado del Catálogo de productos.</p>
+            <div class="form">
+              <div class="field"><label>Nombre de la empresa</label><input id="companyName" placeholder="Ej. Mantén al Día S.A." /></div>
+              <div class="field"><label>Dirección</label><input id="companyAddress" placeholder="Dirección" /></div>
+              <div class="field"><label>Ciudad</label><input id="companyCity" placeholder="Ciudad" /></div>
+              <div class="field"><label>Teléfono</label><input id="companyPhone" placeholder="Ej. 8888-8888" /></div>
+              <div class="field"><label>Correo</label><input id="companyEmail" type="email" placeholder="correo@empresa.com" /></div>
+            </div>
+            <div class="inline"><button class="btn primary" id="saveCompanyInfoBtn">Guardar</button></div>
+          </div>
           <div class="card">
             <h3 style="margin:0 0 8px">Respaldo</h3>
             <p class="meta" style="margin-top:0">Exporta o importa tus datos en JSON.</p>
@@ -209,6 +232,19 @@
     </div>
   </div>
 
+  <div id="productModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="row"><h3 id="productModalTitle" style="margin:0">Nuevo producto</h3><button class="btn secondary closeProduct">Cerrar</button></div>
+      <div class="form" style="margin-top:14px">
+        <div class="field"><label>Nombre</label><input id="productName" placeholder="Nombre del producto" /></div>
+        <div class="field"><label>Precio</label><input id="productPrice" type="number" min="0" step="0.01" placeholder="0" /></div>
+        <div class="field"><label>Descripción</label><textarea id="productDescription" placeholder="Descripción"></textarea></div>
+        <div class="field"><label>Imagen (URL, opcional)</label><input id="productImageUrl" placeholder="https://..." /></div>
+      </div>
+      <div class="inline"><button class="btn primary" id="saveProductBtn">Guardar</button><button class="btn secondary closeProduct">Cancelar</button></div>
+    </div>
+  </div>
+
   <script>
     const STORAGE_KEY = 'manten-al-dia-local-v1';
     const DEFAULT_CATEGORIES = ['Carro','Moto','Aire acondicionado','Computadora','Planta eléctrica','Maquinaria','Otro'];
@@ -224,21 +260,25 @@
       ]}
     ];
 
+    const DEFAULT_COMPANY_INFO = { name:'', address:'', city:'', phone:'', email:'' };
     const DEFAULT_APP_SETTINGS = {
       notificationsEnabled: false,
-      notifiedLog: {}
+      notifiedLog: {},
+      companyInfo: { ...DEFAULT_COMPANY_INFO }
     };
 
     const loadedData = loadData();
     let assets = loadedData.assets;
     let categories = loadedData.categories;
     let appSettings = loadedData.appSettings;
+    let products = loadedData.products;
     let selectedAssetId = assets[0]?.id || '';
     let assetCategory = categories[0] || 'Otro';
     let maintenanceStatus = 'Próximo';
     let maintenanceFrequency = 'Mensual';
     let editingAssetId = null;
     let editingMaintenance = null;
+    let editingProductId = null;
     let notificationTimer = null;
 
     const $ = (id) => document.getElementById(id);
@@ -291,10 +331,12 @@
     }
 
     function normalizeAppSettings(settings){
+      const source = settings && typeof settings === 'object' ? settings : {};
       return {
         ...DEFAULT_APP_SETTINGS,
-        ...(settings && typeof settings === 'object' ? settings : {}),
-        notifiedLog: settings && typeof settings.notifiedLog === 'object' && settings.notifiedLog ? settings.notifiedLog : {}
+        ...source,
+        notifiedLog: source.notifiedLog && typeof source.notifiedLog === 'object' ? source.notifiedLog : {},
+        companyInfo: { ...DEFAULT_COMPANY_INFO, ...(source.companyInfo && typeof source.companyInfo === 'object' ? source.companyInfo : {}) }
       };
     }
 
@@ -306,19 +348,23 @@
       try {
         const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
         if (Array.isArray(parsed)) {
-          return { assets: normalizeAssets(parsed), categories: [...DEFAULT_CATEGORIES], appSettings: normalizeAppSettings() };
+          return { assets: normalizeAssets(parsed), categories: [...DEFAULT_CATEGORIES], appSettings: normalizeAppSettings(), products: [] };
         }
         if (parsed && typeof parsed === 'object') {
           return {
             assets: normalizeAssets(parsed.assets),
             categories: normalizeCategories(parsed.categories),
-            appSettings: normalizeAppSettings(parsed.appSettings)
+            appSettings: normalizeAppSettings(parsed.appSettings),
+            products: normalizeProducts(parsed.products)
           };
         }
       } catch {}
-      return { assets: structuredClone(initialAssets), categories: [...DEFAULT_CATEGORIES], appSettings: normalizeAppSettings() };
+      return { assets: structuredClone(initialAssets), categories: [...DEFAULT_CATEGORIES], appSettings: normalizeAppSettings(), products: [] };
     }
-    function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({ assets, categories, appSettings })); }
+    function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({ assets, categories, appSettings, products })); }
+    function normalizeProducts(list){
+      return (Array.isArray(list) ? list : []).map(product => ({ name:'', price:0, description:'', imageUrl:'', ...product }));
+    }
     function normalizeAssets(list){
       return (Array.isArray(list) ? list : []).map(asset => ({
         clientName:'', clientPhone:'', clientAddress:'', clientCity:'', maintenanceRecords:[], ...asset,
@@ -570,7 +616,94 @@
       $('frequencyChips').innerHTML = FREQUENCIES.map(x => `<button class="chip ${x===maintenanceFrequency?'active':''}" onclick="setMaintenanceFrequency('${x}')">${x}</button>`).join('');
     }
 
-    function renderAll(){ renderMetrics(); renderDashboard(); renderAssets(); renderCalendar(); renderHistory(); renderMaintenanceAssetOptions(); renderCategoryLists(); renderChips(); saveData(); updateNotificationStatus(); }
+    function renderCompanyInfoCard(){
+      const info = appSettings.companyInfo || DEFAULT_COMPANY_INFO;
+      const hasData = info.name || info.address || info.city || info.phone || info.email;
+      const el = $('companyInfoCard');
+      if (!hasData) {
+        el.innerHTML = `<div class="empty">Agrega los datos de tu empresa en Ajustes → Ubicación de empresa para mostrarlos aquí.<div class="inline" style="justify-content:center;margin-top:12px"><button class="btn secondary small" onclick="setTab('settings')">Ir a Ajustes</button></div></div>`;
+        return;
+      }
+      el.innerHTML = `
+        <h3 style="margin:0 0 8px">${escapeHtml(info.name || 'Mi empresa')}</h3>
+        ${info.address ? `<div class="meta"><strong>Dirección:</strong> ${escapeHtml(info.address)}</div>` : ''}
+        ${info.city ? `<div class="meta"><strong>Ciudad:</strong> ${escapeHtml(info.city)}</div>` : ''}
+        ${info.phone ? `<div class="meta"><strong>Teléfono:</strong> ${escapeHtml(info.phone)}</div>` : ''}
+        ${info.email ? `<div class="meta"><strong>Correo:</strong> ${escapeHtml(info.email)}</div>` : ''}`;
+    }
+
+    function renderProducts(){
+      $('productList').innerHTML = products.length ? products.map(product => `
+        <div class="card">
+          ${product.imageUrl ? `<img src="${escapeHtml(product.imageUrl)}" alt="${escapeHtml(product.name)}" style="width:100%;height:160px;object-fit:cover;border-radius:14px;margin-bottom:10px" onerror="this.style.display='none'" />` : ''}
+          <div class="row"><h3 style="margin:0">${escapeHtml(product.name)}</h3><strong>${fmt(product.price)}</strong></div>
+          <div class="meta">${escapeHtml(product.description || 'Sin descripción')}</div>
+          <div class="inline"><button class="btn warning small" onclick="openEditProduct('${product.id}')">Editar</button><button class="btn danger small" onclick="deleteProduct('${product.id}')">Eliminar</button></div>
+        </div>`).join('') : `<div class="empty">No hay productos en el catálogo.</div>`;
+    }
+
+    function renderCatalog(){ renderCompanyInfoCard(); renderProducts(); }
+
+    function fillCompanyInfoForm(){
+      const info = appSettings.companyInfo || DEFAULT_COMPANY_INFO;
+      $('companyName').value = info.name || '';
+      $('companyAddress').value = info.address || '';
+      $('companyCity').value = info.city || '';
+      $('companyPhone').value = info.phone || '';
+      $('companyEmail').value = info.email || '';
+    }
+
+    function saveCompanyInfo(){
+      appSettings.companyInfo = {
+        name: $('companyName').value.trim(),
+        address: $('companyAddress').value.trim(),
+        city: $('companyCity').value.trim(),
+        phone: $('companyPhone').value.trim(),
+        email: $('companyEmail').value.trim()
+      };
+      renderAll();
+      showNotice('Ubicación de empresa guardada.');
+    }
+
+    function resetProductForm(){
+      $('productName').value=''; $('productPrice').value=''; $('productDescription').value=''; $('productImageUrl').value='';
+      editingProductId = null; $('productModalTitle').textContent='Nuevo producto'; $('saveProductBtn').textContent='Guardar';
+    }
+    function openProductModal(){ resetProductForm(); $('productModal').classList.remove('hidden'); }
+    function closeProductModal(){ $('productModal').classList.add('hidden'); }
+
+    function openEditProduct(id){
+      const product = products.find(p => p.id === id);
+      if (!product) return;
+      editingProductId = id;
+      $('productModalTitle').textContent='Editar producto';
+      $('saveProductBtn').textContent='Guardar cambios';
+      $('productName').value = product.name || '';
+      $('productPrice').value = product.price ?? '';
+      $('productDescription').value = product.description || '';
+      $('productImageUrl').value = product.imageUrl || '';
+      $('productModal').classList.remove('hidden');
+    }
+    window.openEditProduct = openEditProduct;
+
+    function saveProduct(){
+      const name=$('productName').value.trim(), price=Number($('productPrice').value||0), description=$('productDescription').value.trim(), imageUrl=$('productImageUrl').value.trim();
+      if (!name) { alert('Escribe el nombre del producto.'); return; }
+      if (editingProductId) {
+        products = products.map(p => p.id === editingProductId ? ({ ...p, name, price, description, imageUrl }) : p);
+        closeProductModal(); resetProductForm(); renderAll();
+        showNotice('Producto actualizado.');
+        return;
+      }
+      products.unshift({ id: uid(), name, price, description, imageUrl });
+      closeProductModal(); resetProductForm(); renderAll();
+      showNotice('Producto guardado.');
+    }
+
+    function deleteProduct(id){ if(!confirm('¿Deseas eliminar este producto del catálogo?')) return; products = products.filter(p=>p.id!==id); renderAll(); showNotice('Producto eliminado.'); }
+    window.deleteProduct = deleteProduct;
+
+    function renderAll(){ renderMetrics(); renderDashboard(); renderAssets(); renderCalendar(); renderHistory(); renderMaintenanceAssetOptions(); renderCategoryLists(); renderChips(); renderCatalog(); fillCompanyInfoForm(); saveData(); updateNotificationStatus(); }
 
     function setTab(tab){
       document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
@@ -713,7 +846,7 @@
     window.deleteAsset = deleteAsset;
 
     function exportData(){
-      const payload = JSON.stringify({ assets, categories }, null, 2);
+      const payload = JSON.stringify({ assets, categories, products, appSettings: { companyInfo: appSettings.companyInfo } }, null, 2);
       if(isAndroidApp()){
         try {
           AndroidBridge.exportBackup(payload);
@@ -734,10 +867,12 @@
             assets = normalizeAssets(parsed);
             categories = [...DEFAULT_CATEGORIES];
             appSettings = normalizeAppSettings();
+            products = [];
           } else if (parsed && typeof parsed === 'object') {
             assets = normalizeAssets(parsed.assets);
             categories = normalizeCategories(parsed.categories);
             appSettings = normalizeAppSettings(parsed.appSettings);
+            products = normalizeProducts(parsed.products);
           } else {
             throw new Error('Formato inválido');
           }
@@ -751,7 +886,7 @@
       reader.readAsText(file);
     }
 
-    function resetAll(){ if(!confirm('Esto borrará todos los datos guardados en este navegador.')) return; assets = structuredClone(initialAssets); categories = [...DEFAULT_CATEGORIES]; appSettings = normalizeAppSettings(); selectedAssetId=assets[0]?.id||''; assetCategory = categories[0] || 'Otro'; localStorage.removeItem(STORAGE_KEY); renderAll(); startNotificationLoop(); showNotice('Datos restaurados.'); }
+    function resetAll(){ if(!confirm('Esto borrará todos los datos guardados en este navegador.')) return; assets = structuredClone(initialAssets); categories = [...DEFAULT_CATEGORIES]; appSettings = normalizeAppSettings(); products = []; selectedAssetId=assets[0]?.id||''; assetCategory = categories[0] || 'Otro'; localStorage.removeItem(STORAGE_KEY); renderAll(); startNotificationLoop(); showNotice('Datos restaurados.'); }
 
     function openCategoryModal(){ $('newCategoryName').value=''; $('categoryModal').classList.remove('hidden'); renderCategoryLists(); }
     function closeCategoryModal(){ $('categoryModal').classList.add('hidden'); $('newCategoryName').value=''; }
@@ -819,6 +954,11 @@
     $('disableNotificationsBtn').addEventListener('click', disableNotifications);
     $('testNotificationBtn').addEventListener('click', testNotification);
     $('resetBtn').addEventListener('click', resetAll);
+    $('saveCompanyInfoBtn').addEventListener('click', saveCompanyInfo);
+    $('openProductBtn').addEventListener('click', openProductModal);
+    document.querySelectorAll('.closeProduct').forEach(x => x.addEventListener('click', () => { closeProductModal(); resetProductForm(); }));
+    $('saveProductBtn').addEventListener('click', saveProduct);
+    $('productModal').addEventListener('click', e => { if(e.target.id==='productModal') { closeProductModal(); resetProductForm(); } });
     $('assetModal').addEventListener('click', e => { if(e.target.id==='assetModal') { closeAssetModal(); resetAssetForm(); } });
     $('maintenanceModal').addEventListener('click', e => { if(e.target.id==='maintenanceModal') { closeMaintenanceModal(); resetMaintenanceForm(); } });
     $('categoryModal').addEventListener('click', e => { if(e.target.id==='categoryModal') closeCategoryModal(); });
