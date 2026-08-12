@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, Clock, Car, User, Trash2, Warehouse } from 'lucide-react'
+import { Plus, Clock, Car, User, Trash2, Warehouse, Minus, X } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -11,6 +11,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Loading } from '../components/ui/Loading'
 import {
   useAppointments,
+  useActiveBayAppointments,
   useSaveAppointment,
   useSetAppointmentStatus,
   useSetAppointmentBay,
@@ -21,8 +22,9 @@ import { useClients, useClientVehicles } from '../hooks/useClients'
 import { useEmployees } from '../hooks/useEmployees'
 import { useCatalogItems } from '../hooks/useCatalogItems'
 import { useBays } from '../hooks/useBays'
+import { useFormatCurrency } from '../hooks/useCurrency'
 import { formatDateTime } from '../lib/format'
-import type { AppointmentStatus } from '../types/database'
+import type { AppointmentStatus, Bay } from '../types/database'
 
 const statusTone: Record<AppointmentStatus, 'gray' | 'blue' | 'yellow' | 'green' | 'red'> = {
   pendiente: 'gray',
@@ -44,6 +46,22 @@ const statusLabel: Record<AppointmentStatus, string> = {
   cancelada: 'Cancelada',
 }
 
+type BayBoardStatus = 'libre' | 'pendiente' | 'en_proceso' | 'listo'
+
+const bayBoardStyle: Record<BayBoardStatus, { card: string; tone: 'gray' | 'yellow' | 'blue' | 'green'; label: string }> = {
+  libre: { card: 'border-slate-200 bg-white', tone: 'gray', label: 'Libre' },
+  pendiente: { card: 'border-amber-300 bg-amber-50', tone: 'yellow', label: 'Pendiente' },
+  en_proceso: { card: 'border-blue-300 bg-blue-50', tone: 'blue', label: 'En lavado' },
+  listo: { card: 'border-emerald-300 bg-emerald-50', tone: 'green', label: 'Terminado' },
+}
+
+const boardActionButtons: { status: AppointmentStatus; label: string }[] = [
+  { status: 'pendiente', label: 'Pendiente' },
+  { status: 'en_proceso', label: 'En lavado' },
+  { status: 'listo', label: 'Terminado' },
+  { status: 'completada', label: 'Entregada' },
+]
+
 function startOfDayISO(daysFromToday = 0) {
   const d = new Date()
   d.setDate(d.getDate() + daysFromToday)
@@ -54,15 +72,19 @@ function startOfDayISO(daysFromToday = 0) {
 export function Appointments() {
   const range = useMemo(() => ({ from: startOfDayISO(-7), to: startOfDayISO(30) }), [])
   const { data: appointments, isLoading } = useAppointments(range)
+  const { data: activeBayAppointments } = useActiveBayAppointments()
   const { data: clients } = useClients()
   const { data: employees } = useEmployees(true)
   const { data: services } = useCatalogItems('service')
+  const { data: products } = useCatalogItems('product')
   const { data: bays } = useBays(true)
+  const formatMoney = useFormatCurrency()
   const saveAppointment = useSaveAppointment()
   const setStatus = useSetAppointmentStatus()
   const setBay = useSetAppointmentBay()
   const deleteAppointment = useDeleteAppointment()
 
+  const [tab, setTab] = useState<'agenda' | 'bahias'>('agenda')
   const [open, setOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<AppointmentWithRelations | null>(null)
   const [form, setForm] = useState({
@@ -119,19 +141,196 @@ export function Appointments() {
     return Array.from(map.entries())
   }, [appointments])
 
+  // ----- Tablero de bahías -----
+  const sellableItems = useMemo(
+    () => [...(services ?? []), ...(products ?? [])].filter((i) => i.sellable && i.active),
+    [services, products],
+  )
+
+  const bayOccupancy = useMemo(() => {
+    const map = new Map<string, AppointmentWithRelations>()
+    for (const a of activeBayAppointments ?? []) {
+      if (a.bay_id && !map.has(a.bay_id)) map.set(a.bay_id, a)
+    }
+    return map
+  }, [activeBayAppointments])
+
+  const [boardModal, setBoardModal] = useState<{ bay: Bay; appt: AppointmentWithRelations | null } | null>(null)
+  const [confirmCancelSession, setConfirmCancelSession] = useState(false)
+  const [sessionClientId, setSessionClientId] = useState('')
+  const [sessionVehicleId, setSessionVehicleId] = useState('')
+  const [sessionEmployeeId, setSessionEmployeeId] = useState('')
+  const [sessionItems, setSessionItems] = useState<{ item_id: string; item_name: string; qty: number }[]>([])
+  const [sessionItemToAdd, setSessionItemToAdd] = useState('')
+  const { data: sessionVehicles } = useClientVehicles(sessionClientId || null)
+
+  function openBayFree(bay: Bay) {
+    setSessionClientId('')
+    setSessionVehicleId('')
+    setSessionEmployeeId('')
+    setSessionItems([])
+    setSessionItemToAdd('')
+    setBoardModal({ bay, appt: null })
+  }
+
+  function openBayOccupied(bay: Bay, appt: AppointmentWithRelations) {
+    setSessionClientId(appt.client_id || '')
+    setSessionVehicleId(appt.vehicle_id || '')
+    setSessionEmployeeId(appt.employee_id || '')
+    setSessionItems(
+      (appt.appointment_items ?? []).map((it) => ({
+        item_id: it.item_id,
+        item_name: it.catalog_items?.name || 'Ítem',
+        qty: it.qty,
+      })),
+    )
+    setSessionItemToAdd('')
+    setBoardModal({ bay, appt })
+  }
+
+  function addSessionItem() {
+    if (!sessionItemToAdd) return
+    const item = sellableItems.find((i) => i.id === sessionItemToAdd)
+    if (!item) return
+    setSessionItems((prev) => {
+      const existing = prev.find((p) => p.item_id === item.id)
+      if (existing) return prev.map((p) => (p.item_id === item.id ? { ...p, qty: p.qty + 1 } : p))
+      return [...prev, { item_id: item.id, item_name: item.name, qty: 1 }]
+    })
+    setSessionItemToAdd('')
+  }
+
+  function updateSessionItemQty(itemId: string, qty: number) {
+    setSessionItems((prev) => prev.map((p) => (p.item_id === itemId ? { ...p, qty: Math.max(qty, 0.01) } : p)))
+  }
+
+  function removeSessionItem(itemId: string) {
+    setSessionItems((prev) => prev.filter((p) => p.item_id !== itemId))
+  }
+
+  async function submitSession() {
+    if (!boardModal) return
+    const items = sessionItems.map((it) => ({ item_id: it.item_id, qty: it.qty }))
+    if (boardModal.appt) {
+      await saveAppointment.mutateAsync({
+        id: boardModal.appt.id,
+        client_id: sessionClientId || null,
+        vehicle_id: sessionVehicleId || null,
+        employee_id: sessionEmployeeId || null,
+        items,
+      })
+    } else {
+      await saveAppointment.mutateAsync({
+        client_id: sessionClientId || null,
+        vehicle_id: sessionVehicleId || null,
+        employee_id: sessionEmployeeId || null,
+        bay_id: boardModal.bay.id,
+        scheduled_at: new Date().toISOString(),
+        duration_min: 45,
+        status: 'pendiente',
+        items,
+      })
+    }
+    setBoardModal(null)
+  }
+
+  async function changeSessionStatus(status: AppointmentStatus) {
+    if (!boardModal?.appt) return
+    await setStatus.mutateAsync({ id: boardModal.appt.id, status })
+    setBoardModal(null)
+  }
+
   return (
     <div>
       <PageHeader
         title="Citas"
         description="Agenda de servicios y seguimiento de lavados en curso"
         action={
-          <Button onClick={openNew}>
-            <Plus size={16} /> Nueva cita
-          </Button>
+          tab === 'agenda' ? (
+            <Button onClick={openNew}>
+              <Plus size={16} /> Nueva cita
+            </Button>
+          ) : undefined
         }
       />
 
-      {isLoading ? (
+      <div className="mb-5 flex gap-1 rounded-xl bg-slate-200/70 p-1 sm:inline-flex">
+        <button
+          onClick={() => setTab('agenda')}
+          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
+            tab === 'agenda' ? 'bg-white text-slate-900 shadow' : 'text-slate-600'
+          }`}
+        >
+          Agenda
+        </button>
+        <button
+          onClick={() => setTab('bahias')}
+          className={`flex-1 rounded-lg px-4 py-2 text-sm font-bold transition sm:flex-none ${
+            tab === 'bahias' ? 'bg-white text-slate-900 shadow' : 'text-slate-600'
+          }`}
+        >
+          Bahías en vivo
+        </button>
+      </div>
+
+      {tab === 'bahias' ? (
+        <div>
+          {!bays || bays.length === 0 ? (
+            <EmptyState
+              title="No hay bahías activas"
+              description="Crea tus bahías en Configuración > Bahías para usar este tablero."
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {bays.map((bay) => {
+                const appt = bayOccupancy.get(bay.id) || null
+                const boardStatus: BayBoardStatus =
+                  appt && (appt.status === 'pendiente' || appt.status === 'en_proceso' || appt.status === 'listo')
+                    ? appt.status
+                    : appt
+                      ? 'pendiente'
+                      : 'libre'
+                const style = bayBoardStyle[boardStatus]
+                return (
+                  <button
+                    key={bay.id}
+                    onClick={() => (appt ? openBayOccupied(bay, appt) : openBayFree(bay))}
+                    className={`rounded-2xl border-2 p-4 text-left transition hover:shadow-md ${style.card}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-slate-800">{bay.name}</p>
+                      <Badge tone={style.tone}>{style.label}</Badge>
+                    </div>
+                    {appt ? (
+                      <div className="mt-3 grid gap-1 text-sm text-slate-600">
+                        {appt.client ? (
+                          <span className="flex items-center gap-1 truncate">
+                            <User size={13} className="shrink-0" /> {appt.client.full_name}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">Sin cliente</span>
+                        )}
+                        {appt.vehicle && (
+                          <span className="flex items-center gap-1 truncate">
+                            <Car size={13} className="shrink-0" /> {appt.vehicle.brand} {appt.vehicle.model}
+                          </span>
+                        )}
+                        {appt.appointment_items && appt.appointment_items.length > 0 && (
+                          <span className="truncate text-xs text-slate-500">
+                            {appt.appointment_items.map((it) => it.catalog_items?.name).filter(Boolean).join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-sm text-slate-400">Toca para iniciar un lavado</p>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      ) : isLoading ? (
         <Loading />
       ) : !appointments || appointments.length === 0 ? (
         <EmptyState title="No hay citas en este rango" description="Agenda la próxima cita de un cliente." />
@@ -287,6 +486,148 @@ export function Appointments() {
         onConfirm={async () => {
           if (confirmDelete) await deleteAppointment.mutateAsync(confirmDelete.id)
           setConfirmDelete(null)
+        }}
+      />
+
+      <Modal
+        open={boardModal !== null}
+        title={boardModal ? `Bahía: ${boardModal.bay.name}` : ''}
+        onClose={() => setBoardModal(null)}
+        wide
+      >
+        {boardModal && (
+          <div className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Cliente">
+                <Select
+                  value={sessionClientId}
+                  onChange={(e) => {
+                    setSessionClientId(e.target.value)
+                    setSessionVehicleId('')
+                  }}
+                >
+                  <option value="">Sin cliente</option>
+                  {clients?.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.full_name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Vehículo">
+                <Select value={sessionVehicleId} onChange={(e) => setSessionVehicleId(e.target.value)} disabled={!sessionClientId}>
+                  <option value="">Sin vehículo</option>
+                  {sessionVehicles?.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.brand} {v.model} {v.plate && `· ${v.plate}`}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Empleado">
+                <Select value={sessionEmployeeId} onChange={(e) => setSessionEmployeeId(e.target.value)}>
+                  <option value="">Sin asignar</option>
+                  {employees?.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.full_name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-semibold text-slate-700">Servicios y productos</p>
+              <div className="flex flex-wrap gap-2">
+                <Select
+                  value={sessionItemToAdd}
+                  onChange={(e) => setSessionItemToAdd(e.target.value)}
+                  className="min-w-[160px] flex-1"
+                >
+                  <option value="">Selecciona...</option>
+                  {sellableItems.map((i) => (
+                    <option key={i.id} value={i.id}>
+                      {i.name} · {formatMoney(i.price)}
+                    </option>
+                  ))}
+                </Select>
+                <Button variant="secondary" onClick={addSessionItem} disabled={!sessionItemToAdd} className="shrink-0">
+                  <Plus size={15} /> Agregar
+                </Button>
+              </div>
+              {sessionItems.length > 0 && (
+                <div className="mt-3 grid gap-2">
+                  {sessionItems.map((it) => (
+                    <div key={it.item_id} className="flex items-center gap-2 rounded-lg border border-slate-200 p-2">
+                      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{it.item_name}</p>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          onClick={() => updateSessionItemQty(it.item_id, it.qty - 1)}
+                          className="grid h-6 w-6 place-items-center rounded-md border border-slate-300 text-slate-500 hover:bg-slate-100"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <span className="w-5 text-center text-sm font-semibold">{it.qty}</span>
+                        <button
+                          onClick={() => updateSessionItemQty(it.item_id, it.qty + 1)}
+                          className="grid h-6 w-6 place-items-center rounded-md border border-slate-300 text-slate-500 hover:bg-slate-100"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                      <button onClick={() => removeSessionItem(it.item_id)} className="shrink-0 text-slate-400 hover:text-red-600">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button disabled={saveAppointment.isPending} onClick={submitSession} className="w-full">
+              {saveAppointment.isPending ? 'Guardando...' : boardModal.appt ? 'Guardar cambios' : 'Iniciar lavado'}
+            </Button>
+
+            {boardModal.appt && (
+              <div className="border-t border-slate-200 pt-4">
+                <p className="mb-2 text-sm font-semibold text-slate-700">Estado de la bahía</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {boardActionButtons.map((b) => (
+                    <button
+                      key={b.status}
+                      onClick={() => changeSessionStatus(b.status)}
+                      disabled={setStatus.isPending}
+                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition ${
+                        boardModal.appt?.status === b.status
+                          ? 'border-brand-600 bg-brand-50 text-brand-700'
+                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {b.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setConfirmCancelSession(true)}
+                  className="mt-3 text-sm font-semibold text-red-600 hover:underline"
+                >
+                  Cancelar esta sesión
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={confirmCancelSession}
+        title="Cancelar sesión de bahía"
+        danger
+        confirmLabel="Cancelar sesión"
+        onCancel={() => setConfirmCancelSession(false)}
+        onConfirm={async () => {
+          await changeSessionStatus('cancelada')
+          setConfirmCancelSession(false)
         }}
       />
     </div>
