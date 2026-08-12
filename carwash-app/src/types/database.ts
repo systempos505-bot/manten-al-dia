@@ -143,9 +143,28 @@ export interface CatalogItem {
   stock_qty: number
   min_stock: number
   unit: string
+  category_id: string | null
   active: boolean
   created_at: string
   updated_at: string
+}
+
+export interface ProductUnit {
+  id: string
+  business_id: string
+  name: string
+  active: boolean
+  sort_order: number
+  created_at: string
+}
+
+export interface ProductCategory {
+  id: string
+  business_id: string
+  name: string
+  active: boolean
+  sort_order: number
+  created_at: string
 }
 
 export interface Supplier {

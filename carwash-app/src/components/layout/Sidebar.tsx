@@ -33,7 +33,7 @@ type NavItem =
       basePath: string
       permission: PermissionKey | null
       adminOnly?: boolean
-      links: { to: string; label: string }[]
+      links: { to: string; label: string; permission?: PermissionKey | null }[]
     }
 
 const navItems: NavItem[] = [
@@ -52,7 +52,21 @@ const navItems: NavItem[] = [
       { to: '/clientes/lista', label: 'Lista de Clientes' },
     ],
   },
-  { kind: 'link', to: '/catalogo', label: 'Productos y servicios', icon: Package, permission: 'catalogo_ver' },
+  {
+    kind: 'group',
+    key: 'productos',
+    label: 'Productos',
+    icon: Package,
+    basePath: '/productos',
+    permission: 'catalogo_ver',
+    links: [
+      { to: '/productos/crear', label: 'Crear Producto', permission: 'catalogo_editar' },
+      { to: '/productos/lista', label: 'Lista de Productos' },
+      { to: '/productos/precios', label: 'Actualizar Precio', permission: 'catalogo_editar' },
+      { to: '/productos/unidades', label: 'Unidades', permission: 'catalogo_editar' },
+      { to: '/productos/categorias', label: 'Categorías', permission: 'catalogo_editar' },
+    ],
+  },
   {
     kind: 'group',
     key: 'compras',
@@ -316,13 +330,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               )
             }
             const Icon = item.icon
+            const visibleLinks = item.links.filter((l) => l.permission === undefined || l.permission === null || can(l.permission))
             return (
               <NavGroup
                 key={item.key}
                 icon={<Icon size={18} />}
                 label={item.label}
                 basePath={item.basePath}
-                links={item.links}
+                links={visibleLinks}
                 onNavigate={onClose}
                 isOpen={openGroup === item.key}
                 onToggle={() => toggleGroup(item.key)}

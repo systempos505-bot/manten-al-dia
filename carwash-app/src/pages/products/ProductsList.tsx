@@ -1,49 +1,52 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react'
-import { PageHeader } from '../components/ui/PageHeader'
-import { Card } from '../components/ui/Card'
-import { Button } from '../components/ui/Button'
-import { Badge } from '../components/ui/Badge'
-import { Field, Input, Select, Textarea } from '../components/ui/Input'
-import { Modal } from '../components/ui/Modal'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { EmptyState } from '../components/ui/EmptyState'
-import { Loading } from '../components/ui/Loading'
-import { useCatalogItems, useSaveCatalogItem, useDeleteCatalogItem } from '../hooks/useCatalogItems'
-import { useFormatCurrency, useFormatQuantity } from '../hooks/useCurrency'
-import { useAuth } from '../context/AuthContext'
-import type { CatalogItem, CatalogItemType } from '../types/database'
+import { Pencil, Trash2, AlertTriangle } from 'lucide-react'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { Card } from '../../components/ui/Card'
+import { Badge } from '../../components/ui/Badge'
+import { Field, Input, Select, Textarea } from '../../components/ui/Input'
+import { Modal } from '../../components/ui/Modal'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { Loading } from '../../components/ui/Loading'
+import { Button } from '../../components/ui/Button'
+import { useCatalogItems, useSaveCatalogItem, useDeleteCatalogItem } from '../../hooks/useCatalogItems'
+import { useProductUnits } from '../../hooks/useProductUnits'
+import { useProductCategories } from '../../hooks/useProductCategories'
+import { useFormatCurrency, useFormatQuantity } from '../../hooks/useCurrency'
+import { useAuth } from '../../context/AuthContext'
+import type { CatalogItem, CatalogItemType } from '../../types/database'
 
-const emptyForm = {
-  type: 'service' as CatalogItemType,
-  name: '',
-  description: '',
-  price: '0',
-  cost: '0',
-  sellable: true,
-  track_inventory: false,
-  stock_qty: '0',
-  min_stock: '0',
-  unit: 'pza',
-}
-
-export function Catalog() {
+export function ProductsList() {
   const formatMoney = useFormatCurrency()
   const formatQty = useFormatQuantity()
   const { can } = useAuth()
   const canEdit = can('catalogo_editar')
-  const [tab, setTab] = useState<CatalogItemType>('service')
+  const [tab, setTab] = useState<CatalogItemType>('product')
   const { data: items, isLoading } = useCatalogItems(tab)
+  const { data: units } = useProductUnits()
+  const { data: categories } = useProductCategories()
   const saveItem = useSaveCatalogItem()
   const deleteItem = useDeleteCatalogItem()
 
   const [modal, setModal] = useState<{ open: boolean; editing: CatalogItem | null }>({ open: false, editing: null })
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState({
+    type: 'product' as CatalogItemType,
+    name: '',
+    description: '',
+    category_id: '',
+    price: '0',
+    cost: '0',
+    sellable: true,
+    track_inventory: false,
+    stock_qty: '0',
+    min_stock: '0',
+    unit: '',
+  })
   const [confirmDelete, setConfirmDelete] = useState<CatalogItem | null>(null)
 
-  function openNew() {
-    setForm({ ...emptyForm, type: tab })
-    setModal({ open: true, editing: null })
+  function categoryName(id: string | null) {
+    if (!id) return '—'
+    return categories?.find((c) => c.id === id)?.name ?? '—'
   }
 
   function openEdit(item: CatalogItem) {
@@ -51,6 +54,7 @@ export function Catalog() {
       type: item.type,
       name: item.name,
       description: item.description ?? '',
+      category_id: item.category_id ?? '',
       price: String(item.price),
       cost: String(item.cost),
       sellable: item.sellable,
@@ -63,48 +67,40 @@ export function Catalog() {
   }
 
   async function submit() {
+    if (!modal.editing) return
     await saveItem.mutateAsync({
-      id: modal.editing?.id,
+      id: modal.editing.id,
       type: form.type,
       name: form.name,
       description: form.description || null,
+      category_id: form.category_id || null,
       price: Number(form.price) || 0,
       cost: Number(form.cost) || 0,
       sellable: form.sellable,
       track_inventory: form.track_inventory,
       stock_qty: Number(form.stock_qty) || 0,
       min_stock: Number(form.min_stock) || 0,
-      unit: form.unit || 'pza',
+      unit: form.unit || 'Pieza',
     })
     setModal({ open: false, editing: null })
   }
 
   return (
     <div>
-      <PageHeader
-        title="Productos y servicios"
-        description="Catálogo de servicios de lavado, productos e insumos con control de inventario"
-        action={
-          canEdit && (
-            <Button onClick={openNew}>
-              <Plus size={16} /> Nuevo
-            </Button>
-          )
-        }
-      />
+      <PageHeader title="Lista de Productos" description="Catálogo de productos, insumos y servicios" />
 
       <div className="mb-5 inline-flex gap-1 rounded-xl bg-slate-200/70 p-1">
-        <button
-          onClick={() => setTab('service')}
-          className={`rounded-lg px-4 py-2 text-sm font-bold transition ${tab === 'service' ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
-        >
-          Servicios
-        </button>
         <button
           onClick={() => setTab('product')}
           className={`rounded-lg px-4 py-2 text-sm font-bold transition ${tab === 'product' ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
         >
-          Productos e insumos
+          Simple
+        </button>
+        <button
+          onClick={() => setTab('service')}
+          className={`rounded-lg px-4 py-2 text-sm font-bold transition ${tab === 'service' ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
+        >
+          Servicio
         </button>
       </div>
 
@@ -112,13 +108,14 @@ export function Catalog() {
         {isLoading ? (
           <Loading />
         ) : !items || items.length === 0 ? (
-          <EmptyState title={tab === 'service' ? 'Sin servicios registrados' : 'Sin productos registrados'} />
+          <EmptyState title={tab === 'service' ? 'Sin servicios registrados' : 'Sin productos registrados'} description="Agrega tu primer artículo desde 'Crear Producto'." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
                 <tr>
                   <th className="px-5 py-3">Nombre</th>
+                  <th className="px-5 py-3">Categoría</th>
                   <th className="px-5 py-3">Precio</th>
                   {tab === 'product' && <th className="px-5 py-3">Costo</th>}
                   {tab === 'product' && <th className="px-5 py-3">Stock</th>}
@@ -135,6 +132,7 @@ export function Catalog() {
                         <p className="font-semibold text-slate-900">{item.name}</p>
                         {item.description && <p className="text-xs text-slate-500">{item.description}</p>}
                       </td>
+                      <td className="px-5 py-3 text-slate-600">{categoryName(item.category_id)}</td>
                       <td className="px-5 py-3 font-semibold">{formatMoney(item.price)}</td>
                       {tab === 'product' && <td className="px-5 py-3">{formatMoney(item.cost)}</td>}
                       {tab === 'product' && (
@@ -173,16 +171,26 @@ export function Catalog() {
         )}
       </Card>
 
-      <Modal open={modal.open} title={modal.editing ? 'Editar artículo' : 'Nuevo artículo'} onClose={() => setModal({ open: false, editing: null })}>
+      <Modal open={modal.open} title="Editar artículo" onClose={() => setModal({ open: false, editing: null })}>
         <div className="grid gap-4">
-          <Field label="Tipo">
+          <Field label="Tipo de producto">
             <Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as CatalogItemType })}>
-              <option value="service">Servicio (ej. lavado exterior)</option>
-              <option value="product">Producto / insumo (ej. cera, shampoo)</option>
+              <option value="product">Simple</option>
+              <option value="service">Servicio</option>
             </Select>
           </Field>
           <Field label="Nombre">
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          </Field>
+          <Field label="Categoría">
+            <Select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
+              <option value="">Sin categoría</option>
+              {categories?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label="Descripción">
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
@@ -225,7 +233,14 @@ export function Catalog() {
                 <Input type="number" step="0.01" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: e.target.value })} />
               </Field>
               <Field label="Unidad">
-                <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="pza, lt, kg" />
+                <Select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
+                  <option value="">Selecciona...</option>
+                  {units?.map((u) => (
+                    <option key={u.id} value={u.name}>
+                      {u.name}
+                    </option>
+                  ))}
+                </Select>
               </Field>
             </div>
           )}

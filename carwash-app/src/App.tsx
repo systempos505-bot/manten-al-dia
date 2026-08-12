@@ -8,7 +8,11 @@ import { SetupNeeded } from './pages/SetupNeeded'
 import { Dashboard } from './pages/Dashboard'
 import { CreateClient } from './pages/clients/CreateClient'
 import { ClientsList } from './pages/clients/ClientsList'
-import { Catalog } from './pages/Catalog'
+import { CreateProduct } from './pages/products/CreateProduct'
+import { ProductsList } from './pages/products/ProductsList'
+import { UpdatePrices } from './pages/products/UpdatePrices'
+import { Units } from './pages/products/Units'
+import { Categories } from './pages/products/Categories'
 import { CreatePurchase } from './pages/purchases/CreatePurchase'
 import { PurchasesList } from './pages/purchases/PurchasesList'
 import { CreateSupplier } from './pages/suppliers/CreateSupplier'
@@ -109,10 +113,42 @@ export default function App() {
             }
           />
           <Route
-            path="/catalogo"
+            path="/productos/crear"
+            element={
+              <RequirePermission permission="catalogo_editar">
+                <CreateProduct />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/productos/lista"
             element={
               <RequirePermission permission="catalogo_ver">
-                <Catalog />
+                <ProductsList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/productos/precios"
+            element={
+              <RequirePermission permission="catalogo_editar">
+                <UpdatePrices />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/productos/unidades"
+            element={
+              <RequirePermission permission="catalogo_editar">
+                <Units />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/productos/categorias"
+            element={
+              <RequirePermission permission="catalogo_editar">
+                <Categories />
               </RequirePermission>
             }
           />
