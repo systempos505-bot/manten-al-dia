@@ -63,7 +63,6 @@ export function Pos() {
   const [success, setSuccess] = useState(false)
   const [receivedAmount, setReceivedAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState(mainCurrency)
-  const [changeCurrency, setChangeCurrency] = useState(mainCurrency)
   const [multiPaymentOpen, setMultiPaymentOpen] = useState(false)
   const [multiPayments, setMultiPayments] = useState<
     { id: string; method: PaymentMethod; currency: string; amount: string }[]
@@ -85,7 +84,6 @@ export function Pos() {
 
   const receivedMain = toMain(Number(receivedAmount) || 0, paymentCurrency)
   const changeMain = receivedMain - total
-  const changeDisplay = fromMain(Math.max(changeMain, 0), changeCurrency)
 
   const multiPaidMain = multiPayments.reduce((sum, p) => sum + toMain(Number(p.amount) || 0, p.currency), 0)
   const multiChangeMain = multiPaidMain - total
@@ -458,38 +456,44 @@ export function Pos() {
 
             {paymentMethod === 'efectivo' && (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className={secondaryCurrency ? 'grid grid-cols-2 gap-3' : ''}>
-                  <Field label="Monto recibido">
-                    <div className="flex gap-1.5">
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={receivedAmount}
-                        onChange={(e) => setReceivedAmount(e.target.value)}
-                        placeholder="0.00"
-                        className="flex-1"
-                      />
-                      {secondaryCurrency && (
-                        <Select
-                          value={paymentCurrency}
-                          onChange={(e) => setPaymentCurrency(e.target.value)}
-                          className="w-24 shrink-0"
+                <Field label="Monto recibido">
+                  <div className="flex gap-1.5">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={receivedAmount}
+                      onChange={(e) => setReceivedAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="flex-1"
+                    />
+                    {secondaryCurrency && (
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setPaymentCurrency(mainCurrency)}
+                          className={`h-[42px] w-[50px] rounded-lg font-bold text-sm transition ${
+                            paymentCurrency === mainCurrency
+                              ? 'bg-brand-600 text-white shadow'
+                              : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                          }`}
                         >
-                          <option value={mainCurrency}>{mainCurrency}</option>
-                          <option value={secondaryCurrency}>{secondaryCurrency}</option>
-                        </Select>
-                      )}
-                    </div>
-                  </Field>
-                  {secondaryCurrency && (
-                    <Field label="Dar cambio en">
-                      <Select value={changeCurrency} onChange={(e) => setChangeCurrency(e.target.value)}>
-                        <option value={mainCurrency}>{mainCurrency}</option>
-                        <option value={secondaryCurrency}>{secondaryCurrency}</option>
-                      </Select>
-                    </Field>
-                  )}
-                </div>
+                          {mainCurrency}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentCurrency(secondaryCurrency)}
+                          className={`h-[42px] w-[50px] rounded-lg font-bold text-sm transition ${
+                            paymentCurrency === secondaryCurrency
+                              ? 'bg-brand-600 text-white shadow'
+                              : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          {secondaryCurrency}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </Field>
                 {Number(receivedAmount) > 0 && (
                   <div className="mt-2.5 flex items-center justify-between border-t border-slate-200 pt-2.5 text-sm">
                     <span className="font-semibold text-slate-600">
@@ -498,7 +502,7 @@ export function Pos() {
                     <span className={`text-base font-extrabold ${changeMain < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                       {changeMain < 0
                         ? formatInCurrency(Math.abs(changeMain), mainCurrency)
-                        : formatInCurrency(changeDisplay, changeCurrency)}
+                        : formatInCurrency(changeMain, mainCurrency)}
                     </span>
                   </div>
                 )}
