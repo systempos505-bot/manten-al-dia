@@ -101,7 +101,15 @@ export function useRevokeInvite() {
 export function useUpdateBusiness() {
   const { businessId, refreshBusiness } = useAuth()
   return useMutation({
-    mutationFn: async (input: { name: string; currency: string }) => {
+    mutationFn: async (input: {
+      name: string
+      currency: string
+      date_format?: string
+      time_format?: string
+      logo_url?: string | null
+      currency_decimals?: number
+      quantity_decimals?: number
+    }) => {
       const { error } = await supabase.from('businesses').update(input).eq('id', businessId!)
       if (error) throw error
     },

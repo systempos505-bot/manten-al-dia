@@ -10,7 +10,7 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Loading } from '../components/ui/Loading'
 import { useCatalogItems, useSaveCatalogItem, useDeleteCatalogItem } from '../hooks/useCatalogItems'
-import { useFormatCurrency } from '../hooks/useCurrency'
+import { useFormatCurrency, useFormatQuantity } from '../hooks/useCurrency'
 import { useAuth } from '../context/AuthContext'
 import type { CatalogItem, CatalogItemType } from '../types/database'
 
@@ -29,6 +29,7 @@ const emptyForm = {
 
 export function Catalog() {
   const formatMoney = useFormatCurrency()
+  const formatQty = useFormatQuantity()
   const { can } = useAuth()
   const canEdit = can('catalogo_editar')
   const [tab, setTab] = useState<CatalogItemType>('service')
@@ -141,7 +142,7 @@ export function Catalog() {
                           {item.track_inventory ? (
                             <span className={`flex items-center gap-1 font-semibold ${lowStock ? 'text-red-600' : 'text-slate-700'}`}>
                               {lowStock && <AlertTriangle size={13} />}
-                              {item.stock_qty} {item.unit}
+                              {formatQty(item.stock_qty)} {item.unit}
                             </span>
                           ) : (
                             <span className="text-slate-400">No aplica</span>

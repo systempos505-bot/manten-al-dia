@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { formatCurrency } from '../lib/format'
+import { formatCurrency, formatQuantity } from '../lib/format'
 
 export const CURRENCY_OPTIONS = [
   { code: 'MXN', label: 'MXN — Peso mexicano' },
@@ -26,6 +26,11 @@ export const CURRENCY_OPTIONS = [
 ]
 
 export function useFormatCurrency() {
-  const { currency } = useAuth()
-  return useCallback((amount: number) => formatCurrency(amount, currency), [currency])
+  const { currency, currencyDecimals } = useAuth()
+  return useCallback((amount: number) => formatCurrency(amount, currency, currencyDecimals), [currency, currencyDecimals])
+}
+
+export function useFormatQuantity() {
+  const { quantityDecimals } = useAuth()
+  return useCallback((amount: number) => formatQuantity(amount, quantityDecimals), [quantityDecimals])
 }

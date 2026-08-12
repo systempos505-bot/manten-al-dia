@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import type { MemberRole, PermissionKey } from '../types/database'
+import { setDateTimeFormat } from '../lib/format'
+import type { DateFormat, MemberRole, PermissionKey, TimeFormat } from '../types/database'
 
 const ALL_PERMISSIONS: PermissionKey[] = [
   'pos',
@@ -22,6 +23,11 @@ interface AuthState {
   businessId: string | null
   businessName: string | null
   currency: string
+  currencyDecimals: number
+  quantityDecimals: number
+  dateFormat: DateFormat
+  timeFormat: TimeFormat
+  logoUrl: string | null
   role: MemberRole | null
   isAdmin: boolean
   permissions: Record<PermissionKey, boolean>
@@ -53,23 +59,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState<string | null>(null)
   const [currency, setCurrency] = useState('MXN')
+  const [currencyDecimals, setCurrencyDecimals] = useState(2)
+  const [quantityDecimals, setQuantityDecimals] = useState(2)
+  const [dateFormat, setDateFormat] = useState<DateFormat>('DD/MM/YYYY')
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h')
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
   const [role, setRole] = useState<MemberRole | null>(null)
   const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>(emptyPermissions())
+
+  function resetBusinessState() {
+    setBusinessId(null)
+    setBusinessName(null)
+    setCurrency('MXN')
+    setCurrencyDecimals(2)
+    setQuantityDecimals(2)
+    setDateFormat('DD/MM/YYYY')
+    setTimeFormat('24h')
+    setLogoUrl(null)
+    setRole(null)
+    setPermissions(emptyPermissions())
+    setDateTimeFormat('DD/MM/YYYY', '24h')
+  }
 
   async function loadBusiness(userId: string) {
     const { data, error } = await supabase
       .from('business_members')
-      .select('business_id, role, custom_role_id, businesses(name, currency)')
+      .select(
+        'business_id, role, custom_role_id, businesses(name, currency, currency_decimals, quantity_decimals, date_format, time_format, logo_url)',
+      )
       .eq('user_id', userId)
       .limit(1)
       .maybeSingle()
 
     if (error || !data) {
-      setBusinessId(null)
-      setBusinessName(null)
-      setCurrency('MXN')
-      setRole(null)
-      setPermissions(emptyPermissions())
+      resetBusinessState()
       return
     }
     const businessIdValue = data.business_id as string
@@ -77,9 +100,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const customRoleId = data.custom_role_id as string | null
     setBusinessId(businessIdValue)
     setRole(roleValue)
-    const business = data.businesses as unknown as { name: string; currency: string } | null
+    const business = data.businesses as unknown as {
+      name: string
+      currency: string
+      currency_decimals: number
+      quantity_decimals: number
+      date_format: DateFormat
+      time_format: TimeFormat
+      logo_url: string | null
+    } | null
     setBusinessName(business?.name ?? null)
     setCurrency(business?.currency || 'MXN')
+    setCurrencyDecimals(business?.currency_decimals ?? 2)
+    setQuantityDecimals(business?.quantity_decimals ?? 2)
+    const df = business?.date_format || 'DD/MM/YYYY'
+    const tf = business?.time_format || '24h'
+    setDateFormat(df)
+    setTimeFormat(tf)
+    setDateTimeFormat(df, tf)
+    setLogoUrl(business?.logo_url ?? null)
 
     if (roleValue === 'admin') {
       setPermissions(fullPermissions())
@@ -122,11 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (newSession?.user) {
         loadBusiness(newSession.user.id)
       } else {
-        setBusinessId(null)
-        setBusinessName(null)
-        setCurrency('MXN')
-        setRole(null)
-        setPermissions(emptyPermissions())
+        resetBusinessState()
       }
     })
 
@@ -160,6 +195,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     businessId,
     businessName,
     currency,
+    currencyDecimals,
+    quantityDecimals,
+    dateFormat,
+    timeFormat,
+    logoUrl,
     role,
     isAdmin: role === 'admin',
     permissions,

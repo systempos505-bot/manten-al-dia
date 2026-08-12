@@ -47,7 +47,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
-  const { businessName, user, isAdmin, can, signOut } = useAuth()
+  const { businessName, user, isAdmin, can, signOut, logoUrl } = useAuth()
   const location = useLocation()
   const visibleLinks = links.filter((link) => link.permission === null || can(link.permission))
   const canConfig = can('configuracion')
@@ -69,7 +69,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-2xl">🚿</div>
+            <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 text-2xl">
+              {logoUrl ? <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" /> : '🚿'}
+            </div>
             <div className="min-w-0">
               <p className="truncate font-bold leading-tight">{businessName || 'Auto Lavado'}</p>
               <p className="truncate text-xs text-slate-400">{user?.email}</p>

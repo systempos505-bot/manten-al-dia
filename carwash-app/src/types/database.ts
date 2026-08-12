@@ -50,11 +50,19 @@ export interface CustomRolePermission {
   allowed: boolean
 }
 
+export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD'
+export type TimeFormat = '24h' | '12h'
+
 export interface Business {
   id: string
   name: string
   owner_user_id: string
   currency: string
+  date_format: DateFormat
+  time_format: TimeFormat
+  logo_url: string | null
+  currency_decimals: number
+  quantity_decimals: number
   created_at: string
   updated_at: string
 }
