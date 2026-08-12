@@ -12,7 +12,7 @@ import { useClients, useClientVehicles, useSaveClient } from '../hooks/useClient
 import { useEmployees, useSaveEmployee } from '../hooks/useEmployees'
 import { useBays, useSaveBay } from '../hooks/useBays'
 import { useCreateSale, useSales, type SaleDraftItem } from '../hooks/useSales'
-import { useActiveBayAppointments, useSetAppointmentStatus } from '../hooks/useAppointments'
+import { useActiveBayAppointments, useSaveAppointment, useSetAppointmentStatus } from '../hooks/useAppointments'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { formatCurrency, formatDateTime } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
@@ -31,6 +31,7 @@ export function Pos() {
   const { data: recentSales } = useSales(8)
   const { data: activeBaySessions } = useActiveBayAppointments()
   const createSale = useCreateSale()
+  const saveAppointment = useSaveAppointment()
   const saveClient = useSaveClient()
   const saveEmployee = useSaveEmployee()
   const saveBay = useSaveBay()
@@ -75,6 +76,7 @@ export function Pos() {
   const [linkedAppointmentId, setLinkedAppointmentId] = useState<string | null>(null)
   const [linkedStatus, setLinkedStatus] = useState<AppointmentStatus | null>(null)
   const appliedBayParamRef = useRef<string | null>(null)
+  const skipNextAutosaveRef = useRef(false)
 
   useEffect(() => {
     const bayParam = searchParams.get('bay')
@@ -83,6 +85,7 @@ export function Pos() {
     const appt = activeBaySessions.find((a) => a.bay_id === bayParam)
     setBayId(bayParam)
     if (appt) {
+      skipNextAutosaveRef.current = true
       setClientId(appt.client_id || '')
       setVehicleId(appt.vehicle_id || '')
       setEmployeeId(appt.employee_id || '')
@@ -103,6 +106,28 @@ export function Pos() {
       )
     }
   }, [searchParams, activeBaySessions, sellableItems])
+
+  // Guarda automáticamente los cambios del carrito/cliente/vehículo/empleado
+  // en la cita de la bahía vinculada, para que "Bahías en vivo" siempre
+  // refleje lo que hay cargado en el POS aunque aún no se haya cobrado.
+  useEffect(() => {
+    if (!linkedAppointmentId) return
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false
+      return
+    }
+    const timeout = setTimeout(() => {
+      saveAppointment.mutate({
+        id: linkedAppointmentId,
+        client_id: clientId || null,
+        vehicle_id: vehicleId || null,
+        employee_id: employeeId || null,
+        items: cart.map((it) => ({ item_id: it.item_id, qty: it.qty })),
+      })
+    }, 600)
+    return () => clearTimeout(timeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart, clientId, vehicleId, employeeId, linkedAppointmentId])
 
   const subtotal = cart.reduce((sum, it) => sum + it.qty * it.unit_price, 0)
   const total = Math.max(subtotal - (Number(discount) || 0), 0)
