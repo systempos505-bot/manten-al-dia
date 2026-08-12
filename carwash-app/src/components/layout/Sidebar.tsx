@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -16,6 +16,8 @@ import {
   LogOut,
   X,
   ChevronDown,
+  ChevronsLeft,
+  ChevronsRight,
   ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
@@ -157,6 +159,8 @@ function NavGroup({
   onNavigate,
   isOpen,
   onToggle,
+  collapsed,
+  onExpandInto,
 }: {
   icon: ReactNode
   label: string
@@ -165,9 +169,25 @@ function NavGroup({
   onNavigate: () => void
   isOpen: boolean
   onToggle: () => void
+  collapsed: boolean
+  onExpandInto: () => void
 }) {
   const location = useLocation()
   const active = location.pathname.startsWith(basePath)
+
+  if (collapsed) {
+    return (
+      <button
+        onClick={onExpandInto}
+        title={label}
+        className={`flex items-center justify-center rounded-xl p-2.5 transition ${
+          active ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+        }`}
+      >
+        {icon}
+      </button>
+    )
+  }
 
   return (
     <div>
@@ -209,6 +229,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const { businessName, user, isAdmin, can, signOut, logoUrl } = useAuth()
   const location = useLocation()
 
+  const [collapsed, setCollapsed] = useState(() => location.pathname.startsWith('/pos'))
+  const prevPathRef = useRef(location.pathname)
+
+  useEffect(() => {
+    const enteredPos = location.pathname.startsWith('/pos') && !prevPathRef.current.startsWith('/pos')
+    if (enteredPos) setCollapsed(true)
+    prevPathRef.current = location.pathname
+  }, [location.pathname])
+
   const visibleItems = navItems.filter((item) => {
     if (item.kind === 'group' && item.adminOnly) return isAdmin
     const permission = item.permission
@@ -222,21 +251,26 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     setOpenGroup((current) => (current === key ? null : key))
   }
 
+  function expandInto(key: string) {
+    setCollapsed(false)
+    setOpenGroup(key)
+  }
+
   return (
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-900/50 md:hidden" onClick={onClose} />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col gap-6 overflow-y-auto bg-gradient-to-b from-slate-900 to-slate-800 p-5 text-white transition-transform duration-200 ease-out md:static md:z-auto md:w-64 md:max-w-none md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col gap-6 overflow-y-auto bg-gradient-to-b from-slate-900 to-slate-800 p-5 text-white transition-all duration-200 ease-out md:static md:z-auto md:max-w-none md:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } ${collapsed ? 'md:w-20 md:px-2.5' : 'md:w-64'}`}
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className={`flex items-start justify-between gap-2 ${collapsed ? 'md:justify-center' : ''}`}>
+          <div className={`flex min-w-0 items-center gap-3 ${collapsed ? 'md:justify-center' : ''}`}>
             <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 text-2xl">
               {logoUrl ? <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" /> : '🚿'}
             </div>
-            <div className="min-w-0">
+            <div className={`min-w-0 ${collapsed ? 'md:hidden' : ''}`}>
               <p className="truncate font-bold leading-tight">{businessName || 'Auto Lavado'}</p>
               <p className="truncate text-xs text-slate-400">{user?.email}</p>
             </div>
@@ -250,6 +284,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
 
+        <button
+          onClick={() => setCollapsed((v) => !v)}
+          title={collapsed ? 'Mostrar menú completo' : 'Ocultar menú'}
+          className="hidden shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white md:flex"
+        >
+          {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+          {!collapsed && 'Ocultar'}
+        </button>
+
         <nav className="grid gap-1">
           {visibleItems.map((item) => {
             if (item.kind === 'link') {
@@ -260,14 +303,15 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   to={item.to}
                   end={item.end}
                   onClick={onClose}
+                  title={item.label}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
-                      isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                    }`
+                      collapsed ? 'md:justify-center md:px-2.5' : ''
+                    } ${isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'}`
                   }
                 >
                   <Icon size={18} />
-                  {item.label}
+                  <span className={collapsed ? 'md:hidden' : ''}>{item.label}</span>
                 </NavLink>
               )
             }
@@ -282,6 +326,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 onNavigate={onClose}
                 isOpen={openGroup === item.key}
                 onToggle={() => toggleGroup(item.key)}
+                collapsed={collapsed}
+                onExpandInto={() => expandInto(item.key)}
               />
             )
           })}
@@ -289,10 +335,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
         <button
           onClick={() => signOut()}
-          className="mt-auto flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white"
+          title="Cerrar sesión"
+          className={`mt-auto flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white ${
+            collapsed ? 'md:justify-center md:px-2.5' : ''
+          }`}
         >
           <LogOut size={18} />
-          Cerrar sesión
+          <span className={collapsed ? 'md:hidden' : ''}>Cerrar sesión</span>
         </button>
       </aside>
     </>
