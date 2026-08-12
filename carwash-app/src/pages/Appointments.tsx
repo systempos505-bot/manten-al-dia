@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Plus, Clock, Car, User, Trash2, Warehouse, Minus, X } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Card } from '../components/ui/Card'
@@ -55,13 +56,6 @@ const bayBoardStyle: Record<BayBoardStatus, { card: string; tone: 'gray' | 'yell
   listo: { card: 'border-emerald-300 bg-emerald-50', tone: 'green', label: 'Terminado' },
 }
 
-const boardActionButtons: { status: AppointmentStatus; label: string }[] = [
-  { status: 'pendiente', label: 'Pendiente' },
-  { status: 'en_proceso', label: 'En lavado' },
-  { status: 'listo', label: 'Terminado' },
-  { status: 'completada', label: 'Entregada' },
-]
-
 function startOfDayISO(daysFromToday = 0) {
   const d = new Date()
   d.setDate(d.getDate() + daysFromToday)
@@ -70,6 +64,7 @@ function startOfDayISO(daysFromToday = 0) {
 }
 
 export function Appointments() {
+  const navigate = useNavigate()
   const range = useMemo(() => ({ from: startOfDayISO(-7), to: startOfDayISO(30) }), [])
   const { data: appointments, isLoading } = useAppointments(range)
   const { data: activeBayAppointments } = useActiveBayAppointments()
@@ -155,8 +150,7 @@ export function Appointments() {
     return map
   }, [activeBayAppointments])
 
-  const [boardModal, setBoardModal] = useState<{ bay: Bay; appt: AppointmentWithRelations | null } | null>(null)
-  const [confirmCancelSession, setConfirmCancelSession] = useState(false)
+  const [boardModal, setBoardModal] = useState<Bay | null>(null)
   const [sessionClientId, setSessionClientId] = useState('')
   const [sessionVehicleId, setSessionVehicleId] = useState('')
   const [sessionEmployeeId, setSessionEmployeeId] = useState('')
@@ -170,22 +164,7 @@ export function Appointments() {
     setSessionEmployeeId('')
     setSessionItems([])
     setSessionItemToAdd('')
-    setBoardModal({ bay, appt: null })
-  }
-
-  function openBayOccupied(bay: Bay, appt: AppointmentWithRelations) {
-    setSessionClientId(appt.client_id || '')
-    setSessionVehicleId(appt.vehicle_id || '')
-    setSessionEmployeeId(appt.employee_id || '')
-    setSessionItems(
-      (appt.appointment_items ?? []).map((it) => ({
-        item_id: it.item_id,
-        item_name: it.catalog_items?.name || 'Ítem',
-        qty: it.qty,
-      })),
-    )
-    setSessionItemToAdd('')
-    setBoardModal({ bay, appt })
+    setBoardModal(bay)
   }
 
   function addSessionItem() {
@@ -211,32 +190,16 @@ export function Appointments() {
   async function submitSession() {
     if (!boardModal) return
     const items = sessionItems.map((it) => ({ item_id: it.item_id, qty: it.qty }))
-    if (boardModal.appt) {
-      await saveAppointment.mutateAsync({
-        id: boardModal.appt.id,
-        client_id: sessionClientId || null,
-        vehicle_id: sessionVehicleId || null,
-        employee_id: sessionEmployeeId || null,
-        items,
-      })
-    } else {
-      await saveAppointment.mutateAsync({
-        client_id: sessionClientId || null,
-        vehicle_id: sessionVehicleId || null,
-        employee_id: sessionEmployeeId || null,
-        bay_id: boardModal.bay.id,
-        scheduled_at: new Date().toISOString(),
-        duration_min: 45,
-        status: 'pendiente',
-        items,
-      })
-    }
-    setBoardModal(null)
-  }
-
-  async function changeSessionStatus(status: AppointmentStatus) {
-    if (!boardModal?.appt) return
-    await setStatus.mutateAsync({ id: boardModal.appt.id, status })
+    await saveAppointment.mutateAsync({
+      client_id: sessionClientId || null,
+      vehicle_id: sessionVehicleId || null,
+      employee_id: sessionEmployeeId || null,
+      bay_id: boardModal.id,
+      scheduled_at: new Date().toISOString(),
+      duration_min: 45,
+      status: 'pendiente',
+      items,
+    })
     setBoardModal(null)
   }
 
@@ -294,7 +257,7 @@ export function Appointments() {
                 return (
                   <button
                     key={bay.id}
-                    onClick={() => (appt ? openBayOccupied(bay, appt) : openBayFree(bay))}
+                    onClick={() => (appt ? navigate(`/pos?bay=${bay.id}`) : openBayFree(bay))}
                     className={`rounded-2xl border-2 p-4 text-left transition hover:shadow-md ${style.card}`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -320,6 +283,7 @@ export function Appointments() {
                             {appt.appointment_items.map((it) => it.catalog_items?.name).filter(Boolean).join(', ')}
                           </span>
                         )}
+                        <span className="mt-1 text-xs font-bold text-brand-600">Toca para ver y cobrar en el POS</span>
                       </div>
                     ) : (
                       <p className="mt-3 text-sm text-slate-400">Toca para iniciar un lavado</p>
@@ -491,7 +455,7 @@ export function Appointments() {
 
       <Modal
         open={boardModal !== null}
-        title={boardModal ? `Bahía: ${boardModal.bay.name}` : ''}
+        title={boardModal ? `Bahía: ${boardModal.name}` : ''}
         onClose={() => setBoardModal(null)}
         wide
       >
@@ -585,51 +549,11 @@ export function Appointments() {
             </div>
 
             <Button disabled={saveAppointment.isPending} onClick={submitSession} className="w-full">
-              {saveAppointment.isPending ? 'Guardando...' : boardModal.appt ? 'Guardar cambios' : 'Iniciar lavado'}
+              {saveAppointment.isPending ? 'Guardando...' : 'Iniciar lavado'}
             </Button>
-
-            {boardModal.appt && (
-              <div className="border-t border-slate-200 pt-4">
-                <p className="mb-2 text-sm font-semibold text-slate-700">Estado de la bahía</p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {boardActionButtons.map((b) => (
-                    <button
-                      key={b.status}
-                      onClick={() => changeSessionStatus(b.status)}
-                      disabled={setStatus.isPending}
-                      className={`rounded-xl border-2 px-3 py-2 text-sm font-bold transition ${
-                        boardModal.appt?.status === b.status
-                          ? 'border-brand-600 bg-brand-50 text-brand-700'
-                          : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {b.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setConfirmCancelSession(true)}
-                  className="mt-3 text-sm font-semibold text-red-600 hover:underline"
-                >
-                  Cancelar esta sesión
-                </button>
-              </div>
-            )}
           </div>
         )}
       </Modal>
-
-      <ConfirmDialog
-        open={confirmCancelSession}
-        title="Cancelar sesión de bahía"
-        danger
-        confirmLabel="Cancelar sesión"
-        onCancel={() => setConfirmCancelSession(false)}
-        onConfirm={async () => {
-          await changeSessionStatus('cancelada')
-          setConfirmCancelSession(false)
-        }}
-      />
     </div>
   )
 }

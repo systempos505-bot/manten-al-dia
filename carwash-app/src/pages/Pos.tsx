@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Trash2, ShoppingCart, CheckCircle2, Search, Minus, Plus, ChevronDown, Droplets, Package as PackageIcon, LayoutGrid } from 'lucide-react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -11,10 +12,11 @@ import { useClients, useClientVehicles, useSaveClient } from '../hooks/useClient
 import { useEmployees, useSaveEmployee } from '../hooks/useEmployees'
 import { useBays, useSaveBay } from '../hooks/useBays'
 import { useCreateSale, useSales, type SaleDraftItem } from '../hooks/useSales'
+import { useActiveBayAppointments, useSetAppointmentStatus } from '../hooks/useAppointments'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { formatCurrency, formatDateTime } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
-import type { CatalogItemType, PaymentMethod } from '../types/database'
+import type { AppointmentStatus, CatalogItemType, PaymentMethod } from '../types/database'
 
 type QuickAddKind = 'client' | 'employee' | 'bay' | null
 
@@ -27,10 +29,13 @@ export function Pos() {
   const { data: employees } = useEmployees(true)
   const { data: bays } = useBays(true)
   const { data: recentSales } = useSales(8)
+  const { data: activeBaySessions } = useActiveBayAppointments()
   const createSale = useCreateSale()
   const saveClient = useSaveClient()
   const saveEmployee = useSaveEmployee()
   const saveBay = useSaveBay()
+  const setAppointmentStatus = useSetAppointmentStatus()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [tab, setTab] = useState<CatalogItemType>('service')
   const [search, setSearch] = useState('')
@@ -67,6 +72,37 @@ export function Pos() {
   const [multiPayments, setMultiPayments] = useState<
     { id: string; method: PaymentMethod; currency: string; amount: string }[]
   >([])
+  const [linkedAppointmentId, setLinkedAppointmentId] = useState<string | null>(null)
+  const [linkedStatus, setLinkedStatus] = useState<AppointmentStatus | null>(null)
+  const appliedBayParamRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const bayParam = searchParams.get('bay')
+    if (!bayParam || appliedBayParamRef.current === bayParam || !activeBaySessions) return
+    appliedBayParamRef.current = bayParam
+    const appt = activeBaySessions.find((a) => a.bay_id === bayParam)
+    setBayId(bayParam)
+    if (appt) {
+      setClientId(appt.client_id || '')
+      setVehicleId(appt.vehicle_id || '')
+      setEmployeeId(appt.employee_id || '')
+      setLinkedAppointmentId(appt.id)
+      setLinkedStatus(appt.status)
+      setCart(
+        (appt.appointment_items ?? []).map((it) => {
+          const item = sellableItems.find((s) => s.id === it.item_id)
+          return {
+            item_id: it.item_id,
+            item_name: item?.name || it.catalog_items?.name || 'Ítem',
+            item_type: item?.type || 'service',
+            qty: it.qty,
+            unit_price: item?.price ?? 0,
+            commission_pct: 0,
+          }
+        }),
+      )
+    }
+  }, [searchParams, activeBaySessions, sellableItems])
 
   const subtotal = cart.reduce((sum, it) => sum + it.qty * it.unit_price, 0)
   const total = Math.max(subtotal - (Number(discount) || 0), 0)
@@ -148,7 +184,7 @@ export function Pos() {
       client_id: clientId || null,
       vehicle_id: vehicleId || null,
       employee_id: employeeId || null,
-      appointment_id: null,
+      appointment_id: linkedAppointmentId,
       bay_id: bayId || null,
       payment_method: paymentMethod,
       discount: Number(discount) || 0,
@@ -162,6 +198,17 @@ export function Pos() {
     setMultiPaymentOpen(false)
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2500)
+
+    if (linkedAppointmentId) {
+      setClientId('')
+      setVehicleId('')
+      setEmployeeId('')
+      setBayId('')
+      setLinkedAppointmentId(null)
+      setLinkedStatus(null)
+      appliedBayParamRef.current = null
+      setSearchParams({}, { replace: true })
+    }
   }
 
   function openQuickAdd(kind: QuickAddKind) {
@@ -298,6 +345,33 @@ export function Pos() {
                 ))}
               </Select>
             </Field>
+          </div>
+        )}
+
+        {linkedAppointmentId && (
+          <div className="mt-3 flex shrink-0 flex-wrap items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-500">Estado de la bahía:</span>
+            {(
+              [
+                { status: 'pendiente', label: 'Pendiente' },
+                { status: 'en_proceso', label: 'En lavado' },
+                { status: 'listo', label: 'Terminado' },
+              ] as { status: AppointmentStatus; label: string }[]
+            ).map((s) => (
+              <button
+                key={s.status}
+                type="button"
+                onClick={() => {
+                  setAppointmentStatus.mutate({ id: linkedAppointmentId, status: s.status })
+                  setLinkedStatus(s.status)
+                }}
+                className={`rounded-lg px-2.5 py-1 text-xs font-bold transition ${
+                  linkedStatus === s.status ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
           </div>
         )}
 
