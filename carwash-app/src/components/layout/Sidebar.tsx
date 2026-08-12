@@ -29,12 +29,16 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; end?: bo
   { to: '/empleados', label: 'Empleados', icon: UserRound, permission: 'empleados' },
   { to: '/caja', label: 'Gastos y caja', icon: Wallet, permission: 'caja' },
   { to: '/reportes', label: 'Reportes', icon: BarChart3, permission: 'reportes' },
-  { to: '/configuracion', label: 'Configuración', icon: SettingsIcon, permission: 'configuracion' },
 ]
 
 const userGroupLinks = [
   { to: '/usuarios', label: 'Usuarios' },
   { to: '/usuarios/roles', label: 'Roles' },
+]
+
+const configGroupLinks = [
+  { to: '/configuracion/empresa', label: 'Configuración de Empresa' },
+  { to: '/configuracion/tipos-vehiculo', label: 'Tipos de Vehículo' },
 ]
 
 interface SidebarProps {
@@ -46,8 +50,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const { businessName, user, isAdmin, can, signOut } = useAuth()
   const location = useLocation()
   const visibleLinks = links.filter((link) => link.permission === null || can(link.permission))
+  const canConfig = can('configuracion')
+
   const userGroupActive = location.pathname.startsWith('/usuarios')
   const [userGroupOpen, setUserGroupOpen] = useState(userGroupActive)
+
+  const configGroupActive = location.pathname.startsWith('/configuracion')
+  const [configGroupOpen, setConfigGroupOpen] = useState(configGroupActive)
 
   return (
     <>
@@ -92,6 +101,44 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               {label}
             </NavLink>
           ))}
+
+          {canConfig && (
+            <div>
+              <button
+                onClick={() => setConfigGroupOpen((v) => !v)}
+                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                  configGroupActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <SettingsIcon size={18} />
+                <span className="flex-1 text-left">Configuración</span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-150 ${configGroupOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {configGroupOpen && (
+                <div className="ml-4 mt-1 grid gap-1 border-l border-white/10 pl-3">
+                  {configGroupLinks.map(({ to, label }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        `rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
+                          isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                        }`
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {isAdmin && (
             <div>

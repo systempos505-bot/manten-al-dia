@@ -14,7 +14,8 @@ import { Employees } from './pages/Employees'
 import { Pos } from './pages/Pos'
 import { CashAndExpenses } from './pages/CashAndExpenses'
 import { Reports } from './pages/Reports'
-import { Settings } from './pages/Settings'
+import { CompanySettings } from './pages/CompanySettings'
+import { VehicleTypes } from './pages/VehicleTypes'
 import { Users } from './pages/Users'
 import { Roles } from './pages/Roles'
 import type { PermissionKey } from './types/database'
@@ -127,10 +128,18 @@ export default function App() {
             }
           />
           <Route
-            path="/configuracion"
+            path="/configuracion/empresa"
             element={
               <RequirePermission permission="configuracion">
-                <Settings />
+                <CompanySettings />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/configuracion/tipos-vehiculo"
+            element={
+              <RequirePermission permission="configuracion">
+                <VehicleTypes />
               </RequirePermission>
             }
           />
