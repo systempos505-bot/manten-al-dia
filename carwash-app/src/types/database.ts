@@ -148,6 +148,17 @@ export interface CatalogItem {
   updated_at: string
 }
 
+export interface Supplier {
+  id: string
+  business_id: string
+  name: string
+  phone: string | null
+  email: string | null
+  notes: string | null
+  active: boolean
+  created_at: string
+}
+
 export interface Purchase {
   id: string
   business_id: string

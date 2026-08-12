@@ -10,6 +10,7 @@ import {
   UserRound,
   Wallet,
   Receipt,
+  Building2,
   BarChart3,
   Settings as SettingsIcon,
   LogOut,
@@ -64,6 +65,18 @@ const navItems: NavItem[] = [
   },
   {
     kind: 'group',
+    key: 'proveedores',
+    label: 'Proveedores',
+    icon: Building2,
+    basePath: '/proveedores',
+    permission: 'compras',
+    links: [
+      { to: '/proveedores/crear', label: 'Crear Proveedor' },
+      { to: '/proveedores/lista', label: 'Lista de Proveedores' },
+    ],
+  },
+  {
+    kind: 'group',
     key: 'empleados',
     label: 'Empleados',
     icon: UserRound,
@@ -113,6 +126,7 @@ const navItems: NavItem[] = [
     links: [
       { to: '/configuracion/empresa', label: 'Configuración de Empresa' },
       { to: '/configuracion/tipos-vehiculo', label: 'Tipos de Vehículo' },
+      { to: '/configuracion/bahias', label: 'Bahías' },
     ],
   },
   {

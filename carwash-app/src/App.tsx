@@ -11,6 +11,8 @@ import { ClientsList } from './pages/clients/ClientsList'
 import { Catalog } from './pages/Catalog'
 import { CreatePurchase } from './pages/purchases/CreatePurchase'
 import { PurchasesList } from './pages/purchases/PurchasesList'
+import { CreateSupplier } from './pages/suppliers/CreateSupplier'
+import { SuppliersList } from './pages/suppliers/SuppliersList'
 import { Appointments } from './pages/Appointments'
 import { CreateEmployee } from './pages/employees/CreateEmployee'
 import { EmployeesList } from './pages/employees/EmployeesList'
@@ -26,6 +28,7 @@ import { AppointmentsReport } from './pages/reports/AppointmentsReport'
 import { InventoryReport } from './pages/reports/InventoryReport'
 import { CompanySettings } from './pages/CompanySettings'
 import { VehicleTypes } from './pages/VehicleTypes'
+import { BaysConfig } from './pages/BaysConfig'
 import { Users } from './pages/Users'
 import { Roles } from './pages/Roles'
 import type { PermissionKey } from './types/database'
@@ -130,6 +133,22 @@ export default function App() {
             }
           />
           <Route
+            path="/proveedores/crear"
+            element={
+              <RequirePermission permission="compras">
+                <CreateSupplier />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/proveedores/lista"
+            element={
+              <RequirePermission permission="compras">
+                <SuppliersList />
+              </RequirePermission>
+            }
+          />
+          <Route
             path="/empleados/crear"
             element={
               <RequirePermission permission="empleados">
@@ -230,6 +249,14 @@ export default function App() {
             element={
               <RequirePermission permission="configuracion">
                 <VehicleTypes />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/configuracion/bahias"
+            element={
+              <RequirePermission permission="configuracion">
+                <BaysConfig />
               </RequirePermission>
             }
           />
