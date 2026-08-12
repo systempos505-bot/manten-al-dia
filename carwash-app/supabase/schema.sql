@@ -101,7 +101,7 @@ create table if not exists public.vehicles (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses(id) on delete cascade,
   client_id uuid not null references public.clients(id) on delete cascade,
-  vehicle_type text not null default 'auto' check (vehicle_type in ('auto','camioneta','moto','otro')),
+  vehicle_type text not null default 'Auto',
   brand text,
   model text,
   color text,
