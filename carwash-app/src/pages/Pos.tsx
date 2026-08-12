@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Trash2, ShoppingCart, CheckCircle2, Search, Minus, Plus, ChevronDown, Droplets, Package as PackageIcon } from 'lucide-react'
-import { PageHeader } from '../components/ui/PageHeader'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Field, Input, Select } from '../components/ui/Input'
@@ -101,84 +100,82 @@ export function Pos() {
   }
 
   return (
-    <div>
-      <PageHeader title="Punto de venta" description="Registra un servicio o venta y cóbralo al instante" />
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-        <Card>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Cliente">
-              <Select
-                value={clientId}
-                onChange={(e) => {
-                  setClientId(e.target.value)
-                  setVehicleId('')
-                }}
-              >
-                <option value="">Cliente general</option>
-                {clients?.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.full_name}
+    <div className="grid grid-cols-1 gap-4 lg:h-full lg:grid-cols-[1fr_340px] lg:gap-5">
+      <Card className="flex min-h-0 flex-col lg:h-full">
+        <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Cliente">
+            <Select
+              value={clientId}
+              onChange={(e) => {
+                setClientId(e.target.value)
+                setVehicleId('')
+              }}
+            >
+              <option value="">Cliente general</option>
+              {clients?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.full_name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Empleado que atiende">
+            <Select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
+              <option value="">Sin asignar</option>
+              {employees?.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.full_name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+        {clientId && (
+          <div className="mt-3 shrink-0">
+            <Field label="Vehículo">
+              <Select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
+                <option value="">Sin vehículo</option>
+                {vehicles?.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.brand} {v.model} {v.plate && `· ${v.plate}`}
                   </option>
                 ))}
               </Select>
             </Field>
-            <Field label="Empleado que atiende">
-              <Select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
-                <option value="">Sin asignar</option>
-                {employees?.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.full_name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
           </div>
-          {clientId && (
-            <div className="mt-3">
-              <Field label="Vehículo">
-                <Select value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-                  <option value="">Sin vehículo</option>
-                  {vehicles?.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.brand} {v.model} {v.plate && `· ${v.plate}`}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-          )}
+        )}
 
-          <div className="mt-5 flex items-center gap-5 border-b border-slate-200">
-            <button
-              onClick={() => setTab('service')}
-              className={`-mb-px border-b-2 px-1 pb-2.5 text-sm font-bold transition ${
-                tab === 'service' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Servicios
-            </button>
-            <button
-              onClick={() => setTab('product')}
-              className={`-mb-px border-b-2 px-1 pb-2.5 text-sm font-bold transition ${
-                tab === 'product' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Productos
-            </button>
-          </div>
+        <div className="mt-5 flex shrink-0 items-center gap-5 border-b border-slate-200">
+          <button
+            onClick={() => setTab('service')}
+            className={`-mb-px border-b-2 px-1 pb-2.5 text-sm font-bold transition ${
+              tab === 'service' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Servicios
+          </button>
+          <button
+            onClick={() => setTab('product')}
+            className={`-mb-px border-b-2 px-1 pb-2.5 text-sm font-bold transition ${
+              tab === 'product' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Productos
+          </button>
+        </div>
 
-          <div className="relative mt-4">
-            <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={tab === 'service' ? 'Buscar servicio...' : 'Buscar producto...'}
-              className="pl-10"
-            />
-          </div>
+        <div className="relative mt-4 shrink-0">
+          <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={tab === 'service' ? 'Buscar servicio...' : 'Buscar producto...'}
+            className="pl-10"
+          />
+        </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {visibleItems.map((item) => {
               const outOfStock = tab === 'product' && item.track_inventory && item.stock_qty <= 0
               return (
@@ -204,58 +201,55 @@ export function Pos() {
               </p>
             )}
           </div>
+        </div>
 
-          <div className="mt-5 border-t border-slate-200 pt-3">
-            <button
-              onClick={() => setRecentOpen((v) => !v)}
-              className="flex w-full items-center justify-between text-sm font-bold text-slate-700"
-            >
-              Ventas recientes
-              <ChevronDown size={16} className={`text-slate-400 transition-transform ${recentOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {recentOpen && (
-              <div className="mt-3">
-                {!recentSales || recentSales.length === 0 ? (
-                  <p className="text-sm text-slate-400">Aún no hay ventas.</p>
-                ) : (
-                  <ul className="divide-y divide-slate-100 rounded-xl border border-slate-100">
-                    {recentSales.map((s) => (
-                      <li key={s.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                        <div>
-                          <p className="font-semibold text-slate-800">{s.client?.full_name || 'Cliente general'}</p>
-                          <p className="text-xs text-slate-500">
-                            {formatDateTime(s.sale_date)} · {s.employee?.full_name || 'Sin empleado'}
-                          </p>
-                        </div>
-                        <p className="font-bold">{formatMoney(s.total)}</p>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
-        </Card>
+        <div className="mt-3 shrink-0 border-t border-slate-200 pt-3">
+          <button
+            onClick={() => setRecentOpen((v) => !v)}
+            className="flex w-full items-center justify-between text-sm font-bold text-slate-700"
+          >
+            Ventas recientes
+            <ChevronDown size={16} className={`text-slate-400 transition-transform ${recentOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {recentOpen && (
+            <div className="mt-3 max-h-40 overflow-y-auto">
+              {!recentSales || recentSales.length === 0 ? (
+                <p className="text-sm text-slate-400">Aún no hay ventas.</p>
+              ) : (
+                <ul className="divide-y divide-slate-100 rounded-xl border border-slate-100">
+                  {recentSales.map((s) => (
+                    <li key={s.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
+                      <div>
+                        <p className="font-semibold text-slate-800">{s.client?.full_name || 'Cliente general'}</p>
+                        <p className="text-xs text-slate-500">
+                          {formatDateTime(s.sale_date)} · {s.employee?.full_name || 'Sin empleado'}
+                        </p>
+                      </div>
+                      <p className="font-bold">{formatMoney(s.total)}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
 
-        <Card className="h-fit lg:sticky lg:top-6">
-          <div className="mb-4 flex items-center gap-2">
-            <ShoppingCart size={18} className="text-brand-600" />
-            <p className="font-bold text-slate-800">Ticket actual</p>
-          </div>
+      <Card className="flex min-h-0 flex-col lg:h-full">
+        <div className="mb-4 flex shrink-0 items-center gap-2">
+          <ShoppingCart size={18} className="text-brand-600" />
+          <p className="font-bold text-slate-800">Ticket actual</p>
+        </div>
 
-          <div className="grid gap-3">
-            {cart.length === 0 ? (
-              <EmptyState title="Ticket vacío" description="Selecciona servicios o productos." />
-            ) : (
-              cart.map((it) => (
-                <div key={it.item_id} className="flex items-center gap-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
-                    {it.item_type === 'service' ? <Droplets size={16} /> : <PackageIcon size={16} />}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-800">{it.item_name}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {cart.length === 0 ? (
+            <EmptyState title="Ticket vacío" description="Selecciona servicios o productos." />
+          ) : (
+            <div className="grid gap-3">
+              {cart.map((it) => (
+                <div key={it.item_id} className="flex items-center gap-2">
+                  <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{it.item_name}</p>
+                  <div className="flex shrink-0 items-center gap-1">
                     <button
                       onClick={() => updateQty(it.item_id, it.qty - 1)}
                       className="grid h-6 w-6 place-items-center rounded-md border border-slate-300 text-slate-500 hover:bg-slate-100"
@@ -270,15 +264,17 @@ export function Pos() {
                       <Plus size={12} />
                     </button>
                   </div>
-                  <p className="w-20 shrink-0 text-right text-sm font-bold">{formatMoney(it.qty * it.unit_price)}</p>
+                  <p className="w-16 shrink-0 text-right text-sm font-bold">{formatMoney(it.qty * it.unit_price)}</p>
                   <button onClick={() => removeFromCart(it.item_id)} className="shrink-0 text-slate-400 hover:text-red-600">
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
+        </div>
 
+        <div className="shrink-0">
           <div className="my-4 border-t border-slate-100" />
 
           <div className="grid gap-3">
@@ -315,8 +311,8 @@ export function Pos() {
               {createSale.isPending ? 'Cobrando...' : 'Cobrar'}
             </Button>
           </div>
-        </Card>
-      </div>
+        </div>
+      </Card>
     </div>
   )
 }

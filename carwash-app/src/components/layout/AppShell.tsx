@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const location = useLocation()
+  const isPos = location.pathname === '/pos'
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-100">
@@ -23,7 +25,7 @@ export function AppShell() {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-6xl p-6 md:p-8">
+          <div className={isPos ? 'h-full p-4 md:p-6' : 'mx-auto max-w-6xl p-6 md:p-8'}>
             <Outlet />
           </div>
         </main>
