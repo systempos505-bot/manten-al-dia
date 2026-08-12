@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -23,13 +24,14 @@ const emptyForm = {
 }
 
 export function CreateProduct() {
+  const navigate = useNavigate()
   const saveItem = useSaveCatalogItem()
   const { data: units } = useProductUnits()
   const { data: categories } = useProductCategories()
   const [form, setForm] = useState(emptyForm)
   const [saved, setSaved] = useState(false)
 
-  async function submit() {
+  async function saveCurrent() {
     await saveItem.mutateAsync({
       type: form.type,
       name: form.name,
@@ -43,6 +45,15 @@ export function CreateProduct() {
       min_stock: Number(form.min_stock) || 0,
       unit: form.unit || units?.[0]?.name || 'Pieza',
     })
+  }
+
+  async function submitAndGoToList() {
+    await saveCurrent()
+    navigate('/productos/lista')
+  }
+
+  async function submitAndCreateAnother() {
+    await saveCurrent()
     setForm({ ...emptyForm, type: form.type })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -128,9 +139,12 @@ export function CreateProduct() {
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <Button disabled={!form.name || saveItem.isPending} onClick={submit}>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button disabled={!form.name || saveItem.isPending} onClick={submitAndGoToList}>
               {saveItem.isPending ? 'Guardando...' : 'Guardar'}
+            </Button>
+            <Button variant="secondary" disabled={!form.name || saveItem.isPending} onClick={submitAndCreateAnother}>
+              Guardar y crear otro
             </Button>
             {saved && <span className="text-sm font-semibold text-emerald-600">Guardado ✓</span>}
           </div>
