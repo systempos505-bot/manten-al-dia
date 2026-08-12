@@ -67,16 +67,12 @@ export function Pos() {
   const [multiPayments, setMultiPayments] = useState<
     { id: string; method: PaymentMethod; currency: string; amount: string }[]
   >([])
-  const [multiChangeCurrency, setMultiChangeCurrency] = useState(mainCurrency)
 
   const subtotal = cart.reduce((sum, it) => sum + it.qty * it.unit_price, 0)
   const total = Math.max(subtotal - (Number(discount) || 0), 0)
 
   function toMain(amount: number, curr: string) {
     return curr === secondaryCurrency ? amount * exchangeRate : amount
-  }
-  function fromMain(amountMain: number, curr: string) {
-    return curr === secondaryCurrency ? amountMain / exchangeRate : amountMain
   }
   function formatInCurrency(amount: number, curr: string) {
     return formatCurrency(amount, curr, currencyDecimals)
@@ -87,7 +83,6 @@ export function Pos() {
 
   const multiPaidMain = multiPayments.reduce((sum, p) => sum + toMain(Number(p.amount) || 0, p.currency), 0)
   const multiChangeMain = multiPaidMain - total
-  const multiChangeDisplay = fromMain(Math.max(multiChangeMain, 0), multiChangeCurrency)
 
   function addToCart(itemId: string) {
     const item = sellableItems.find((i) => i.id === itemId)
@@ -575,14 +570,6 @@ export function Pos() {
                         <option value="otro">Otro</option>
                       </Select>
                     </Field>
-                    {secondaryCurrency && (
-                      <Field label="Moneda" className="w-24">
-                        <Select value={p.currency} onChange={(e) => updateMultiPayment(p.id, 'currency', e.target.value)}>
-                          <option value={mainCurrency}>{mainCurrency}</option>
-                          <option value={secondaryCurrency}>{secondaryCurrency}</option>
-                        </Select>
-                      </Field>
-                    )}
                     <Field label="Monto" className="flex-1 min-w-0">
                       <Input
                         type="number"
@@ -592,6 +579,34 @@ export function Pos() {
                         placeholder="0.00"
                       />
                     </Field>
+                    {secondaryCurrency && (
+                      <Field label="Moneda" className="shrink-0">
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => updateMultiPayment(p.id, 'currency', mainCurrency)}
+                            className={`h-[42px] w-[50px] rounded-lg font-bold text-sm transition ${
+                              p.currency === mainCurrency
+                                ? 'bg-brand-600 text-white shadow'
+                                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {mainCurrency}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateMultiPayment(p.id, 'currency', secondaryCurrency)}
+                            className={`h-[42px] w-[50px] rounded-lg font-bold text-sm transition ${
+                              p.currency === secondaryCurrency
+                                ? 'bg-brand-600 text-white shadow'
+                                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {secondaryCurrency}
+                          </button>
+                        </div>
+                      </Field>
+                    )}
                     <button
                       onClick={() => removeMultiPayment(p.id)}
                       className="h-[42px] w-[42px] shrink-0 grid place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
@@ -624,23 +639,9 @@ export function Pos() {
                 <span className={`font-semibold ${multiChangeMain < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                   {multiChangeMain < 0 ? 'Falta' : 'Cambio a devolver'}
                 </span>
-                {multiChangeMain < 0 ? (
-                  <span className="font-bold text-red-600">{formatInCurrency(Math.abs(multiChangeMain), mainCurrency)}</span>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-emerald-600">{formatInCurrency(multiChangeDisplay, multiChangeCurrency)}</span>
-                    {secondaryCurrency && (
-                      <Select
-                        value={multiChangeCurrency}
-                        onChange={(e) => setMultiChangeCurrency(e.target.value)}
-                        className="w-20 text-xs"
-                      >
-                        <option value={mainCurrency}>{mainCurrency}</option>
-                        <option value={secondaryCurrency}>{secondaryCurrency}</option>
-                      </Select>
-                    )}
-                  </div>
-                )}
+                <span className={`font-bold ${multiChangeMain < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  {formatInCurrency(Math.abs(multiChangeMain), mainCurrency)}
+                </span>
               </div>
             )}
           </div>
