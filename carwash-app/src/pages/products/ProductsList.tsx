@@ -182,16 +182,28 @@ export function ProductsList() {
           <Field label="Nombre">
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </Field>
-          <Field label="Categoría">
-            <Select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
-              <option value="">Sin categoría</option>
-              {categories?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Categoría">
+              <Select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
+                <option value="">Sin categoría</option>
+                {categories?.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Unidad">
+              <Select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
+                <option value="">Selecciona...</option>
+                {units?.map((u) => (
+                  <option key={u.id} value={u.name}>
+                    {u.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
           <Field label="Descripción">
             <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </Field>
@@ -225,22 +237,12 @@ export function ProductsList() {
           </label>
 
           {form.track_inventory && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Field label="Stock actual">
                 <Input type="number" step="0.01" value={form.stock_qty} onChange={(e) => setForm({ ...form, stock_qty: e.target.value })} />
               </Field>
               <Field label="Stock mínimo">
                 <Input type="number" step="0.01" value={form.min_stock} onChange={(e) => setForm({ ...form, min_stock: e.target.value })} />
-              </Field>
-              <Field label="Unidad">
-                <Select value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
-                  <option value="">Selecciona...</option>
-                  {units?.map((u) => (
-                    <option key={u.id} value={u.name}>
-                      {u.name}
-                    </option>
-                  ))}
-                </Select>
               </Field>
             </div>
           )}
