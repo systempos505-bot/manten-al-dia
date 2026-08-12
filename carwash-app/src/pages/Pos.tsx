@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Trash2, ShoppingCart, CheckCircle2, Search, Minus, Plus, ChevronDown, Droplets, Package as PackageIcon } from 'lucide-react'
+import { Trash2, ShoppingCart, CheckCircle2, Search, Minus, Plus, ChevronDown, Droplets, Package as PackageIcon, LayoutGrid } from 'lucide-react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Field, Input, Select } from '../components/ui/Input'
@@ -24,6 +24,7 @@ export function Pos() {
   const [tab, setTab] = useState<CatalogItemType>('service')
   const [search, setSearch] = useState('')
   const [recentOpen, setRecentOpen] = useState(false)
+  const [mobileView, setMobileView] = useState<'products' | 'cart'>('products')
 
   const visibleItems = useMemo(() => {
     const list = (tab === 'service' ? services : products) ?? []
@@ -99,9 +100,36 @@ export function Pos() {
     setTimeout(() => setSuccess(false), 2500)
   }
 
+  const cartCount = cart.reduce((sum, it) => sum + it.qty, 0)
+
   return (
-    <div className="grid grid-cols-1 gap-4 lg:h-full lg:grid-cols-[1fr_340px] lg:gap-5">
-      <Card className="flex min-h-0 flex-col lg:h-full">
+    <div className="flex h-full min-h-0 flex-col gap-3">
+      <div className="flex shrink-0 gap-1 rounded-xl bg-slate-200/70 p-1 lg:hidden">
+        <button
+          onClick={() => setMobileView('products')}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition ${
+            mobileView === 'products' ? 'bg-white text-slate-900 shadow' : 'text-slate-600'
+          }`}
+        >
+          <LayoutGrid size={15} /> Productos
+        </button>
+        <button
+          onClick={() => setMobileView('cart')}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold transition ${
+            mobileView === 'cart' ? 'bg-white text-slate-900 shadow' : 'text-slate-600'
+          }`}
+        >
+          <ShoppingCart size={15} /> Carrito
+          {cartCount > 0 && (
+            <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-xs font-bold text-white">
+              {cartCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_340px] lg:gap-5">
+      <Card className={`min-h-0 h-full flex-col ${mobileView === 'products' ? 'flex' : 'hidden'} lg:flex`}>
         <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Cliente">
             <Select
@@ -235,7 +263,7 @@ export function Pos() {
         </div>
       </Card>
 
-      <Card className="flex min-h-0 flex-col lg:h-full">
+      <Card className={`min-h-0 h-full flex-col ${mobileView === 'cart' ? 'flex' : 'hidden'} lg:flex`}>
         <div className="mb-4 flex shrink-0 items-center gap-2">
           <ShoppingCart size={18} className="text-brand-600" />
           <p className="font-bold text-slate-800">Ticket actual</p>
@@ -313,6 +341,7 @@ export function Pos() {
           </div>
         </div>
       </Card>
+      </div>
     </div>
   )
 }
