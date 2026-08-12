@@ -22,7 +22,7 @@ function createWindow() {
   if (isDev && devServerUrl) {
     win.loadURL(devServerUrl)
   } else {
-    win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
+    win.loadFile(path.join(__dirname, '..', 'dist-electron', 'index.html'))
   }
 
   win.webContents.setWindowOpenHandler(({ url }) => {

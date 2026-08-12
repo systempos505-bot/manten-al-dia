@@ -7,13 +7,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:electron": "tsc -b && vite build --base=./ --outDir dist-electron",
     "lint": "oxlint",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env ELECTRON_START_URL=http://localhost:5173 electron .\"",
-    "electron:build": "npm run build && electron-builder",
-    "electron:build:win": "npm run build && electron-builder --win",
-    "electron:build:mac": "npm run build && electron-builder --mac",
-    "electron:build:linux": "npm run build && electron-builder --linux"
+    "electron:build": "npm run build:electron && electron-builder",
+    "electron:build:win": "npm run build:electron && electron-builder --win",
+    "electron:build:mac": "npm run build:electron && electron-builder --mac",
+    "electron:build:linux": "npm run build:electron && electron-builder --linux"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
@@ -46,7 +47,7 @@
     "appId": "com.systempos.carwashapp",
     "productName": "Auto Lavado",
     "files": [
-      "dist/**/*",
+      "dist-electron/**/*",
       "electron/**/*"
     ],
     "directories": {
