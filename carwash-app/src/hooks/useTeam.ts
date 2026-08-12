@@ -38,6 +38,17 @@ export function useUpdateMemberRole() {
   })
 }
 
+export function useRemoveMember() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('business_members').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['business_members'] }),
+  })
+}
+
 export function useInvites() {
   const { businessId } = useAuth()
   return useQuery({

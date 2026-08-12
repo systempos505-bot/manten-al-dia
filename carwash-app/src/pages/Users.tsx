@@ -1,22 +1,25 @@
 import { useState } from 'react'
-import { Copy, Trash2, UserPlus } from 'lucide-react'
+import { Copy, Trash2, UserPlus, Pencil, Eye } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
-import { Field, Select } from '../components/ui/Input'
+import { Field, Input, Select } from '../components/ui/Input'
+import { Modal } from '../components/ui/Modal'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Loading } from '../components/ui/Loading'
 import { EmptyState } from '../components/ui/EmptyState'
 import { useAuth } from '../context/AuthContext'
 import {
   useBusinessMembers,
   useUpdateMemberRole,
+  useRemoveMember,
   useInvites,
   useCreateInvite,
   useRevokeInvite,
 } from '../hooks/useTeam'
 import { formatDate } from '../lib/format'
-import type { MemberRole } from '../types/database'
+import type { BusinessMember, MemberRole } from '../types/database'
 
 const roleLabel: Record<MemberRole, string> = {
   admin: 'Administrador',
@@ -27,12 +30,23 @@ export function Users() {
   const { user } = useAuth()
   const { data: members, isLoading: loadingMembers } = useBusinessMembers()
   const updateRole = useUpdateMemberRole()
+  const removeMember = useRemoveMember()
 
   const { data: invites, isLoading: loadingInvites } = useInvites()
   const createInvite = useCreateInvite()
   const revokeInvite = useRevokeInvite()
   const [inviteRole, setInviteRole] = useState<MemberRole>('staff')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+
+  const [search, setSearch] = useState('')
+  const [editModal, setEditModal] = useState<BusinessMember | null>(null)
+  const [editRole, setEditRole] = useState<MemberRole>('staff')
+  const [viewMember, setViewMember] = useState<BusinessMember | null>(null)
+  const [confirmRemove, setConfirmRemove] = useState<BusinessMember | null>(null)
+
+  const filteredMembers = (members ?? []).filter((m) =>
+    (m.email || '').toLowerCase().includes(search.toLowerCase()),
+  )
 
   async function copyCode(code: string) {
     try {
@@ -44,9 +58,20 @@ export function Users() {
     setTimeout(() => setCopiedCode(null), 1500)
   }
 
+  function openEdit(m: BusinessMember) {
+    setEditRole(m.role)
+    setEditModal(m)
+  }
+
+  async function saveEdit() {
+    if (!editModal) return
+    await updateRole.mutateAsync({ id: editModal.id, role: editRole })
+    setEditModal(null)
+  }
+
   return (
     <div>
-      <PageHeader title="Usuarios" description="Invita personas a tu negocio y gestiona quién tiene acceso" />
+      <PageHeader title="Usuarios" description="Administrar usuarios con acceso a tu negocio" />
 
       <div className="grid gap-6">
         <Card>
@@ -107,40 +132,125 @@ export function Users() {
         </Card>
 
         <Card className="p-0">
-          <p className="border-b border-slate-100 px-5 py-4 font-bold text-slate-800">Usuarios con Acceso</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <p className="font-bold text-slate-800">Todos los Usuarios</p>
+            <div className="w-full max-w-xs">
+              <Input placeholder="Buscar por correo..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
+
           {loadingMembers ? (
             <Loading />
-          ) : !members || members.length === 0 ? (
+          ) : filteredMembers.length === 0 ? (
             <EmptyState title="Sin usuarios" />
           ) : (
-            <ul className="divide-y divide-slate-100">
-              {members.map((m) => (
-                <li key={m.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
-                  <div>
-                    <p className="font-semibold text-slate-800">
-                      {m.email || 'Correo no disponible'}
-                      {m.user_id === user?.id && (
-                        <span className="ml-2">
-                          <Badge tone="blue">Tú</Badge>
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-slate-500">Desde {formatDate(m.created_at)}</p>
-                  </div>
-                  <Select
-                    value={m.role}
-                    onChange={(e) => updateRole.mutate({ id: m.id, role: e.target.value as MemberRole })}
-                    className="!w-auto"
-                  >
-                    <option value="admin">Administrador</option>
-                    <option value="staff">Operador</option>
-                  </Select>
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="px-5 py-3">Email</th>
+                    <th className="px-5 py-3">Rol</th>
+                    <th className="px-5 py-3">Desde</th>
+                    <th className="px-5 py-3 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredMembers.map((m) => (
+                    <tr key={m.id}>
+                      <td className="px-5 py-3 font-semibold text-slate-800">
+                        {m.email || 'Correo no disponible'}
+                        {m.user_id === user?.id && (
+                          <span className="ml-2">
+                            <Badge tone="blue">Tú</Badge>
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3">
+                        <Badge tone={m.role === 'admin' ? 'blue' : 'gray'}>{roleLabel[m.role]}</Badge>
+                      </td>
+                      <td className="px-5 py-3 text-slate-500">{formatDate(m.created_at)}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEdit(m)}
+                            className="flex items-center gap-1 rounded-lg border border-indigo-200 px-2.5 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50"
+                          >
+                            <Pencil size={13} /> Editar
+                          </button>
+                          <button
+                            onClick={() => setViewMember(m)}
+                            className="flex items-center gap-1 rounded-lg border border-sky-200 px-2.5 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-50"
+                          >
+                            <Eye size={13} /> Ver
+                          </button>
+                          <button
+                            onClick={() => setConfirmRemove(m)}
+                            disabled={m.user_id === user?.id}
+                            className="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <Trash2 size={13} /> Borrar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </Card>
       </div>
+
+      <Modal open={Boolean(editModal)} title="Editar usuario" onClose={() => setEditModal(null)}>
+        <div className="grid gap-4">
+          <Field label="Correo">
+            <Input value={editModal?.email || ''} disabled />
+          </Field>
+          <Field label="Rol">
+            <Select value={editRole} onChange={(e) => setEditRole(e.target.value as MemberRole)}>
+              <option value="admin">Administrador</option>
+              <option value="staff">Operador</option>
+            </Select>
+          </Field>
+          <Button onClick={saveEdit} disabled={updateRole.isPending}>
+            {updateRole.isPending ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal open={Boolean(viewMember)} title="Detalle del usuario" onClose={() => setViewMember(null)}>
+        {viewMember && (
+          <div className="grid gap-3 text-sm">
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-400">Correo</p>
+              <p className="font-semibold text-slate-800">{viewMember.email || 'No disponible'}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-400">Rol</p>
+              <p className="font-semibold text-slate-800">{roleLabel[viewMember.role]}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase text-slate-400">Usuario desde</p>
+              <p className="font-semibold text-slate-800">{formatDate(viewMember.created_at)}</p>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={Boolean(confirmRemove)}
+        title="Quitar acceso"
+        description={`"${confirmRemove?.email}" perderá el acceso a este negocio. Esta acción no se puede deshacer.`}
+        danger
+        confirmLabel="Quitar acceso"
+        onCancel={() => setConfirmRemove(null)}
+        onConfirm={async () => {
+          if (confirmRemove) {
+            await removeMember.mutateAsync(confirmRemove.id)
+          }
+          setConfirmRemove(null)
+        }}
+      />
     </div>
   )
 }
