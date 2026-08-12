@@ -21,6 +21,11 @@ con **Supabase** (Postgres) como backend en la nube.
    [`supabase/schema.sql`](./supabase/schema.sql) y ejecútalo. Esto crea las
    tablas, los triggers de negocio (ventas → caja, compras → gastos → caja,
    control de inventario) y las políticas de seguridad (RLS).
+2.b. Si ya tenías el proyecto creado desde antes, ve otra vez a **SQL Editor
+   > New query** y ejecuta también cada archivo dentro de
+   [`supabase/migrations/`](./supabase/migrations) en orden (por ahora solo
+   `002_roles_and_permissions.sql`). Ahí se agregan los usuarios con roles y
+   permisos (administrador / operador) e invitaciones por código.
 3. Ve a **Project Settings > API** y copia el **Project URL** y la
    **anon public key**.
 4. En este proyecto, copia `.env.example` a `.env` y pega tus credenciales:
@@ -92,6 +97,19 @@ carwash-app/
   de efectivo (ingresos/egresos).
 - **Reportes**: ventas por día, por empleado, artículos más vendidos y
   gastos por categoría, por rango de fechas.
+- **Moneda configurable**: en Configuración se elige la moneda del negocio
+  (MXN, USD, y varias más de Latinoamérica y otras regiones); todos los
+  montos de la app se muestran en esa moneda.
+- **Usuarios, roles y permisos**: además de ti como administrador, puedes
+  invitar a alguien más (por ejemplo un cajero) generando un código desde
+  Configuración. Esa persona crea su propia cuenta y se une a tu negocio con
+  el rol que le asignes:
+  - **Administrador**: acceso total (igual que tú).
+  - **Operador**: solo Punto de venta, Citas, Clientes y ver el catálogo
+    (sin poder editar precios, ver reportes, gastos ni configuración).
+  Los permisos están reforzados también a nivel de base de datos (no solo
+  ocultos en pantalla), así que un operador no puede saltarse la
+  restricción aunque intente entrar directo a una URL.
 
 ## Notas y siguientes pasos
 
@@ -101,9 +119,6 @@ carwash-app/
   sucursal, es una extensión natural del esquema actual.
 - Cancelar una venta no revierte automáticamente el stock descontado; es una
   mejora pendiente si la necesitas.
-- Para invitar empleados con su propio inicio de sesión (en lugar de un
-  registro interno sin acceso), habría que agregar un flujo de invitación
-  usando la Admin API de Supabase.
 - La app de escritorio no se pudo probar visualmente en este entorno (sin
   entorno gráfico), pero el binario de Electron y el empaquetado con
   electron-builder quedaron configurados y verificados (`electron --version`

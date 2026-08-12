@@ -7,9 +7,11 @@ import { isSupabaseConfigured } from '../lib/supabase'
 export function Login() {
   const { signIn, signUp } = useAuth()
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [signupMode, setSignupMode] = useState<'new' | 'join'>('new')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [businessName, setBusinessName] = useState('')
+  const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [info, setInfo] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -20,7 +22,13 @@ export function Login() {
     setInfo(null)
     setLoading(true)
     const result =
-      mode === 'signin' ? await signIn(email, password) : await signUp(email, password, businessName)
+      mode === 'signin'
+        ? await signIn(email, password)
+        : await signUp(
+            email,
+            password,
+            signupMode === 'join' ? { inviteCode } : { businessName },
+          )
     setLoading(false)
     if (result.error) {
       setError(result.error)
@@ -65,13 +73,42 @@ export function Login() {
           </button>
         </div>
 
+        {mode === 'signup' && (
+          <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
+            <button
+              className={`rounded-lg py-2 text-xs font-bold transition ${signupMode === 'new' ? 'bg-white shadow' : 'text-slate-500'}`}
+              onClick={() => setSignupMode('new')}
+              type="button"
+            >
+              Nuevo negocio
+            </button>
+            <button
+              className={`rounded-lg py-2 text-xs font-bold transition ${signupMode === 'join' ? 'bg-white shadow' : 'text-slate-500'}`}
+              onClick={() => setSignupMode('join')}
+              type="button"
+            >
+              Unirme con código
+            </button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="grid gap-4">
-          {mode === 'signup' && (
+          {mode === 'signup' && signupMode === 'new' && (
             <Field label="Nombre del negocio">
               <Input
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 placeholder="Auto Lavado El Brillo"
+                required
+              />
+            </Field>
+          )}
+          {mode === 'signup' && signupMode === 'join' && (
+            <Field label="Código de invitación">
+              <Input
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Pídeselo al administrador del negocio"
                 required
               />
             </Field>

@@ -9,10 +9,12 @@ import { useCatalogItems } from '../hooks/useCatalogItems'
 import { useClients, useClientVehicles } from '../hooks/useClients'
 import { useEmployees } from '../hooks/useEmployees'
 import { useCreateSale, useSales, type SaleDraftItem } from '../hooks/useSales'
-import { formatCurrency, formatDateTime } from '../lib/format'
+import { useFormatCurrency } from '../hooks/useCurrency'
+import { formatDateTime } from '../lib/format'
 import type { PaymentMethod } from '../types/database'
 
 export function Pos() {
+  const formatMoney = useFormatCurrency()
   const { data: services } = useCatalogItems('service')
   const { data: products } = useCatalogItems('product')
   const { data: clients } = useClients()
@@ -102,7 +104,7 @@ export function Pos() {
                   className="rounded-xl border border-slate-200 p-3 text-left transition hover:border-brand-400 hover:bg-brand-50"
                 >
                   <p className="text-sm font-semibold text-slate-800">{s.name}</p>
-                  <p className="text-xs text-slate-500">{formatCurrency(s.price)}</p>
+                  <p className="text-xs text-slate-500">{formatMoney(s.price)}</p>
                 </button>
               ))}
               {(!services || services.filter((s) => s.sellable).length === 0) && (
@@ -123,7 +125,7 @@ export function Pos() {
                 >
                   <p className="text-sm font-semibold text-slate-800">{p.name}</p>
                   <p className="text-xs text-slate-500">
-                    {formatCurrency(p.price)} {p.track_inventory && `· stock ${p.stock_qty}`}
+                    {formatMoney(p.price)} {p.track_inventory && `· stock ${p.stock_qty}`}
                   </p>
                 </button>
               ))}
@@ -145,7 +147,7 @@ export function Pos() {
                       <p className="font-semibold text-slate-800">{s.client?.full_name || 'Cliente general'}</p>
                       <p className="text-xs text-slate-500">{formatDateTime(s.sale_date)} · {s.employee?.full_name || 'Sin empleado'}</p>
                     </div>
-                    <p className="font-bold">{formatCurrency(s.total)}</p>
+                    <p className="font-bold">{formatMoney(s.total)}</p>
                   </li>
                 ))}
               </ul>
@@ -202,7 +204,7 @@ export function Pos() {
                 <div key={it.item_id} className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-800">{it.item_name}</p>
-                    <p className="text-xs text-slate-500">{formatCurrency(it.unit_price)} c/u</p>
+                    <p className="text-xs text-slate-500">{formatMoney(it.unit_price)} c/u</p>
                   </div>
                   <input
                     type="number"
@@ -211,7 +213,7 @@ export function Pos() {
                     onChange={(e) => updateQty(it.item_id, Number(e.target.value))}
                     className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center text-sm"
                   />
-                  <p className="w-20 text-right text-sm font-bold">{formatCurrency(it.qty * it.unit_price)}</p>
+                  <p className="w-20 text-right text-sm font-bold">{formatMoney(it.qty * it.unit_price)}</p>
                   <button onClick={() => removeFromCart(it.item_id)} className="text-slate-400 hover:text-red-600">
                     <Trash2 size={14} />
                   </button>
@@ -237,11 +239,11 @@ export function Pos() {
 
             <div className="flex items-center justify-between text-sm text-slate-500">
               <span>Subtotal</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{formatMoney(subtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-lg font-extrabold text-slate-900">
               <span>Total</span>
-              <span>{formatCurrency(total)}</span>
+              <span>{formatMoney(total)}</span>
             </div>
 
             {success && (

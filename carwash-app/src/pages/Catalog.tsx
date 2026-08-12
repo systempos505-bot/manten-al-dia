@@ -10,7 +10,8 @@ import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Loading } from '../components/ui/Loading'
 import { useCatalogItems, useSaveCatalogItem, useDeleteCatalogItem } from '../hooks/useCatalogItems'
-import { formatCurrency } from '../lib/format'
+import { useFormatCurrency } from '../hooks/useCurrency'
+import { useAuth } from '../context/AuthContext'
 import type { CatalogItem, CatalogItemType } from '../types/database'
 
 const emptyForm = {
@@ -27,6 +28,8 @@ const emptyForm = {
 }
 
 export function Catalog() {
+  const formatMoney = useFormatCurrency()
+  const { isAdmin } = useAuth()
   const [tab, setTab] = useState<CatalogItemType>('service')
   const { data: items, isLoading } = useCatalogItems(tab)
   const saveItem = useSaveCatalogItem()
@@ -80,9 +83,11 @@ export function Catalog() {
         title="Productos y servicios"
         description="Catálogo de servicios de lavado, productos e insumos con control de inventario"
         action={
-          <Button onClick={openNew}>
-            <Plus size={16} /> Nuevo
-          </Button>
+          isAdmin && (
+            <Button onClick={openNew}>
+              <Plus size={16} /> Nuevo
+            </Button>
+          )
         }
       />
 
@@ -116,7 +121,7 @@ export function Catalog() {
                   {tab === 'product' && <th className="px-5 py-3">Costo</th>}
                   {tab === 'product' && <th className="px-5 py-3">Stock</th>}
                   <th className="px-5 py-3">Estado</th>
-                  <th className="px-5 py-3"></th>
+                  {isAdmin && <th className="px-5 py-3"></th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -128,8 +133,8 @@ export function Catalog() {
                         <p className="font-semibold text-slate-900">{item.name}</p>
                         {item.description && <p className="text-xs text-slate-500">{item.description}</p>}
                       </td>
-                      <td className="px-5 py-3 font-semibold">{formatCurrency(item.price)}</td>
-                      {tab === 'product' && <td className="px-5 py-3">{formatCurrency(item.cost)}</td>}
+                      <td className="px-5 py-3 font-semibold">{formatMoney(item.price)}</td>
+                      {tab === 'product' && <td className="px-5 py-3">{formatMoney(item.cost)}</td>}
                       {tab === 'product' && (
                         <td className="px-5 py-3">
                           {item.track_inventory ? (
@@ -145,16 +150,18 @@ export function Catalog() {
                       <td className="px-5 py-3">
                         {item.active ? <Badge tone="green">Activo</Badge> : <Badge tone="gray">Inactivo</Badge>}
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="flex justify-end gap-1">
-                          <button onClick={() => openEdit(item)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
-                            <Pencil size={14} />
-                          </button>
-                          <button onClick={() => setConfirmDelete(item)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
+                      {isAdmin && (
+                        <td className="px-5 py-3">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => openEdit(item)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                              <Pencil size={14} />
+                            </button>
+                            <button onClick={() => setConfirmDelete(item)} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   )
                 })}

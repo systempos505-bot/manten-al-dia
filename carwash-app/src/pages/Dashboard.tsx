@@ -5,7 +5,8 @@ import { Loading } from '../components/ui/Loading'
 import { EmptyState } from '../components/ui/EmptyState'
 import { useDashboardData } from '../hooks/useDashboard'
 import { useAppointments } from '../hooks/useAppointments'
-import { formatCurrency, formatDateTime } from '../lib/format'
+import { useFormatCurrency } from '../hooks/useCurrency'
+import { formatDateTime } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
 
 function todayRange() {
@@ -18,6 +19,7 @@ function todayRange() {
 
 export function Dashboard() {
   const { businessName } = useAuth()
+  const formatMoney = useFormatCurrency()
   const range = useMemo(todayRange, [])
   const { data, isLoading } = useDashboardData(range)
   const { data: upcoming } = useAppointments({ from: new Date().toISOString(), to: new Date(Date.now() + 3 * 86400000).toISOString() })
@@ -40,7 +42,7 @@ export function Dashboard() {
                 <DollarSign size={16} />
                 <p className="text-xs font-bold uppercase">Ventas hoy</p>
               </div>
-              <p className="mt-2 text-2xl font-extrabold text-slate-900">{formatCurrency(data?.totalSales ?? 0)}</p>
+              <p className="mt-2 text-2xl font-extrabold text-slate-900">{formatMoney(data?.totalSales ?? 0)}</p>
               <p className="text-xs text-slate-400">{data?.salesCount ?? 0} ticket(s)</p>
             </Card>
             <Card>
@@ -48,7 +50,7 @@ export function Dashboard() {
                 <Receipt size={16} />
                 <p className="text-xs font-bold uppercase">Gastos hoy</p>
               </div>
-              <p className="mt-2 text-2xl font-extrabold text-slate-900">{formatCurrency(data?.totalExpenses ?? 0)}</p>
+              <p className="mt-2 text-2xl font-extrabold text-slate-900">{formatMoney(data?.totalExpenses ?? 0)}</p>
             </Card>
             <Card>
               <div className="flex items-center gap-2 text-slate-500">
@@ -56,7 +58,7 @@ export function Dashboard() {
                 <p className="text-xs font-bold uppercase">Utilidad</p>
               </div>
               <p className={`mt-2 text-2xl font-extrabold ${((data?.netProfit ?? 0) < 0) ? 'text-red-600' : 'text-emerald-600'}`}>
-                {formatCurrency(data?.netProfit ?? 0)}
+                {formatMoney(data?.netProfit ?? 0)}
               </p>
             </Card>
             <Card>

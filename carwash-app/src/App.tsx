@@ -14,6 +14,7 @@ import { Employees } from './pages/Employees'
 import { Pos } from './pages/Pos'
 import { CashAndExpenses } from './pages/CashAndExpenses'
 import { Reports } from './pages/Reports'
+import { Settings } from './pages/Settings'
 
 function Protected() {
   const { session, loading, businessId } = useAuth()
@@ -29,6 +30,12 @@ function PublicOnly({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
   if (loading) return <Loading label="Cargando..." />
   if (session) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+function RequireAdmin({ children }: { children: ReactNode }) {
+  const { isAdmin } = useAuth()
+  if (!isAdmin) return <Navigate to="/" replace />
   return <>{children}</>
 }
 
@@ -50,10 +57,46 @@ export default function App() {
           <Route path="/citas" element={<Appointments />} />
           <Route path="/clientes" element={<Clients />} />
           <Route path="/catalogo" element={<Catalog />} />
-          <Route path="/compras" element={<Purchases />} />
-          <Route path="/empleados" element={<Employees />} />
-          <Route path="/caja" element={<CashAndExpenses />} />
-          <Route path="/reportes" element={<Reports />} />
+          <Route
+            path="/compras"
+            element={
+              <RequireAdmin>
+                <Purchases />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/empleados"
+            element={
+              <RequireAdmin>
+                <Employees />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/caja"
+            element={
+              <RequireAdmin>
+                <CashAndExpenses />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/reportes"
+            element={
+              <RequireAdmin>
+                <Reports />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/configuracion"
+            element={
+              <RequireAdmin>
+                <Settings />
+              </RequireAdmin>
+            }
+          />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

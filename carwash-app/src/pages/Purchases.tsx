@@ -9,9 +9,11 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Loading } from '../components/ui/Loading'
 import { usePurchases, useCreatePurchase, type PurchaseDraftItem } from '../hooks/usePurchases'
 import { useCatalogItems } from '../hooks/useCatalogItems'
-import { formatCurrency, formatDate, todayISODate } from '../lib/format'
+import { useFormatCurrency } from '../hooks/useCurrency'
+import { formatDate, todayISODate } from '../lib/format'
 
 export function Purchases() {
+  const formatMoney = useFormatCurrency()
   const { data: purchases, isLoading } = usePurchases()
   const { data: products } = useCatalogItems('product')
   const createPurchase = useCreatePurchase()
@@ -83,7 +85,7 @@ export function Purchases() {
                     <td className="px-5 py-3">{formatDate(p.purchase_date)}</td>
                     <td className="px-5 py-3 font-semibold">{p.supplier_name || 'Sin nombre'}</td>
                     <td className="px-5 py-3 text-slate-500">{p.purchase_items?.length ?? 0} artículo(s)</td>
-                    <td className="px-5 py-3 font-semibold">{formatCurrency(p.total)}</td>
+                    <td className="px-5 py-3 font-semibold">{formatMoney(p.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -130,14 +132,14 @@ export function Purchases() {
                     {itemName(it.item_id)} × {it.qty}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span>{formatCurrency(it.qty * it.unit_cost)}</span>
+                    <span>{formatMoney(it.qty * it.unit_cost)}</span>
                     <button onClick={() => setDraftItems((prev) => prev.filter((_, i) => i !== idx))} className="text-slate-400 hover:text-red-600">
                       <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
               ))}
-              <div className="flex justify-end text-base font-bold">Total: {formatCurrency(total)}</div>
+              <div className="flex justify-end text-base font-bold">Total: {formatMoney(total)}</div>
             </div>
           )}
 

@@ -5,6 +5,8 @@ export type AppointmentStatus = 'pendiente' | 'confirmada' | 'en_proceso' | 'com
 export type SaleStatus = 'completada' | 'cancelada'
 export type CashMovementType = 'apertura' | 'ingreso' | 'egreso' | 'cierre' | 'ajuste'
 
+export type MemberRole = 'admin' | 'staff'
+
 export interface Business {
   id: string
   name: string
@@ -12,6 +14,27 @@ export interface Business {
   currency: string
   created_at: string
   updated_at: string
+}
+
+export interface BusinessMember {
+  id: string
+  business_id: string
+  user_id: string
+  role: MemberRole
+  email: string | null
+  created_at: string
+}
+
+export interface BusinessInvite {
+  id: string
+  business_id: string
+  code: string
+  role: MemberRole
+  created_by: string | null
+  used_by: string | null
+  used_at: string | null
+  expires_at: string | null
+  created_at: string
 }
 
 export interface Employee {

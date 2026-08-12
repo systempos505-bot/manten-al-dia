@@ -8,12 +8,14 @@ import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Loading } from '../components/ui/Loading'
 import { useExpenses, useCreateExpense, useCashMovements, useCreateCashMovement } from '../hooks/useExpenses'
-import { formatCurrency, formatDate, formatDateTime, todayISODate } from '../lib/format'
+import { useFormatCurrency } from '../hooks/useCurrency'
+import { formatDate, formatDateTime, todayISODate } from '../lib/format'
 import type { PaymentMethod } from '../types/database'
 
 const emptyExpense = { category: 'General', description: '', amount: '0', expense_date: todayISODate(), payment_method: 'efectivo' as PaymentMethod }
 
 export function CashAndExpenses() {
+  const formatMoney = useFormatCurrency()
   const [tab, setTab] = useState<'caja' | 'gastos'>('caja')
 
   const range = useMemo(() => {
@@ -91,7 +93,7 @@ export function CashAndExpenses() {
         <div className="grid gap-4">
           <Card className="bg-gradient-to-br from-slate-900 to-brand-900 text-white">
             <p className="text-sm text-slate-300">Saldo estimado (30 días)</p>
-            <p className="mt-1 text-3xl font-extrabold">{formatCurrency(balance)}</p>
+            <p className="mt-1 text-3xl font-extrabold">{formatMoney(balance)}</p>
           </Card>
 
           <Card className="p-0">
@@ -116,7 +118,7 @@ export function CashAndExpenses() {
                     </div>
                     <p className={`font-bold ${m.type === 'egreso' ? 'text-red-600' : 'text-emerald-600'}`}>
                       {m.type === 'egreso' ? '-' : '+'}
-                      {formatCurrency(m.amount)}
+                      {formatMoney(m.amount)}
                     </p>
                   </li>
                 ))}
@@ -147,7 +149,7 @@ export function CashAndExpenses() {
                       <td className="px-5 py-3">{formatDate(e.expense_date)}</td>
                       <td className="px-5 py-3 font-semibold">{e.category}</td>
                       <td className="px-5 py-3 text-slate-500">{e.description || '—'}</td>
-                      <td className="px-5 py-3 font-semibold text-red-600">{formatCurrency(e.amount)}</td>
+                      <td className="px-5 py-3 font-semibold text-red-600">{formatMoney(e.amount)}</td>
                     </tr>
                   ))}
                 </tbody>

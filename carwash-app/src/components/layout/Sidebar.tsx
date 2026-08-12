@@ -9,21 +9,23 @@ import {
   UserRound,
   Wallet,
   BarChart3,
+  Settings as SettingsIcon,
   LogOut,
   X,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const links = [
-  { to: '/', label: 'Inicio', icon: LayoutDashboard, end: true },
-  { to: '/pos', label: 'Punto de venta', icon: ShoppingCart },
-  { to: '/citas', label: 'Citas', icon: CalendarClock },
-  { to: '/clientes', label: 'Clientes', icon: Users },
-  { to: '/catalogo', label: 'Productos y servicios', icon: Package },
-  { to: '/compras', label: 'Compras', icon: Truck },
-  { to: '/empleados', label: 'Empleados', icon: UserRound },
-  { to: '/caja', label: 'Gastos y caja', icon: Wallet },
-  { to: '/reportes', label: 'Reportes', icon: BarChart3 },
+  { to: '/', label: 'Inicio', icon: LayoutDashboard, end: true, adminOnly: false },
+  { to: '/pos', label: 'Punto de venta', icon: ShoppingCart, adminOnly: false },
+  { to: '/citas', label: 'Citas', icon: CalendarClock, adminOnly: false },
+  { to: '/clientes', label: 'Clientes', icon: Users, adminOnly: false },
+  { to: '/catalogo', label: 'Productos y servicios', icon: Package, adminOnly: false },
+  { to: '/compras', label: 'Compras', icon: Truck, adminOnly: true },
+  { to: '/empleados', label: 'Empleados', icon: UserRound, adminOnly: true },
+  { to: '/caja', label: 'Gastos y caja', icon: Wallet, adminOnly: true },
+  { to: '/reportes', label: 'Reportes', icon: BarChart3, adminOnly: true },
+  { to: '/configuracion', label: 'Configuración', icon: SettingsIcon, adminOnly: true },
 ]
 
 interface SidebarProps {
@@ -32,7 +34,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
-  const { businessName, user, signOut } = useAuth()
+  const { businessName, user, isAdmin, signOut } = useAuth()
+  const visibleLinks = links.filter((link) => !link.adminOnly || isAdmin)
 
   return (
     <>
@@ -61,7 +64,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="grid gap-1">
-          {links.map(({ to, label, icon: Icon, end }) => (
+          {visibleLinks.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}

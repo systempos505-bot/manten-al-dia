@@ -1,15 +1,23 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import type { MemberRole } from '../types/database'
 
 interface AuthState {
   session: Session | null
   user: User | null
   businessId: string | null
   businessName: string | null
+  currency: string
+  role: MemberRole | null
+  isAdmin: boolean
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signUp: (email: string, password: string, businessName: string) => Promise<{ error: string | null }>
+  signUp: (
+    email: string,
+    password: string,
+    opts: { businessName?: string; inviteCode?: string },
+  ) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
   refreshBusiness: () => Promise<void>
 }
@@ -21,11 +29,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState<string | null>(null)
+  const [currency, setCurrency] = useState('MXN')
+  const [role, setRole] = useState<MemberRole | null>(null)
 
   async function loadBusiness(userId: string) {
     const { data, error } = await supabase
       .from('business_members')
-      .select('business_id, businesses(name)')
+      .select('business_id, role, businesses(name, currency)')
       .eq('user_id', userId)
       .limit(1)
       .maybeSingle()
@@ -33,11 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data) {
       setBusinessId(null)
       setBusinessName(null)
+      setCurrency('MXN')
+      setRole(null)
       return
     }
     setBusinessId(data.business_id as string)
-    const business = data.businesses as unknown as { name: string } | null
+    setRole(data.role as MemberRole)
+    const business = data.businesses as unknown as { name: string; currency: string } | null
     setBusinessName(business?.name ?? null)
+    setCurrency(business?.currency || 'MXN')
   }
 
   useEffect(() => {
@@ -57,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setBusinessId(null)
         setBusinessName(null)
+        setCurrency('MXN')
+        setRole(null)
       }
     })
 
@@ -68,12 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error?.message ?? null }
   }
 
-  async function signUp(email: string, password: string, businessName: string) {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { business_name: businessName || 'Mi Auto Lavado' } },
-    })
+  async function signUp(email: string, password: string, opts: { businessName?: string; inviteCode?: string }) {
+    const data = opts.inviteCode
+      ? { invite_code: opts.inviteCode.trim() }
+      : { business_name: opts.businessName || 'Mi Auto Lavado' }
+    const { error } = await supabase.auth.signUp({ email, password, options: { data } })
     return { error: error?.message ?? null }
   }
 
@@ -90,6 +105,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: session?.user ?? null,
     businessId,
     businessName,
+    currency,
+    role,
+    isAdmin: role === 'admin',
     loading,
     signIn,
     signUp,
