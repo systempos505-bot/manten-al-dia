@@ -1,7 +1,20 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
-import type { MemberRole } from '../types/database'
+import type { MemberRole, PermissionKey } from '../types/database'
+
+const ALL_PERMISSIONS: PermissionKey[] = [
+  'pos',
+  'citas',
+  'clientes',
+  'catalogo_ver',
+  'catalogo_editar',
+  'compras',
+  'empleados',
+  'caja',
+  'reportes',
+  'configuracion',
+]
 
 interface AuthState {
   session: Session | null
@@ -11,6 +24,8 @@ interface AuthState {
   currency: string
   role: MemberRole | null
   isAdmin: boolean
+  permissions: Record<PermissionKey, boolean>
+  can: (key: PermissionKey) => boolean
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signUp: (
@@ -24,6 +39,14 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | undefined>(undefined)
 
+function emptyPermissions(): Record<PermissionKey, boolean> {
+  return ALL_PERMISSIONS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as Record<PermissionKey, boolean>)
+}
+
+function fullPermissions(): Record<PermissionKey, boolean> {
+  return ALL_PERMISSIONS.reduce((acc, key) => ({ ...acc, [key]: true }), {} as Record<PermissionKey, boolean>)
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
@@ -31,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [businessName, setBusinessName] = useState<string | null>(null)
   const [currency, setCurrency] = useState('MXN')
   const [role, setRole] = useState<MemberRole | null>(null)
+  const [permissions, setPermissions] = useState<Record<PermissionKey, boolean>>(emptyPermissions())
 
   async function loadBusiness(userId: string) {
     const { data, error } = await supabase
@@ -45,13 +69,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setBusinessName(null)
       setCurrency('MXN')
       setRole(null)
+      setPermissions(emptyPermissions())
       return
     }
-    setBusinessId(data.business_id as string)
-    setRole(data.role as MemberRole)
+    const businessIdValue = data.business_id as string
+    const roleValue = data.role as MemberRole
+    setBusinessId(businessIdValue)
+    setRole(roleValue)
     const business = data.businesses as unknown as { name: string; currency: string } | null
     setBusinessName(business?.name ?? null)
     setCurrency(business?.currency || 'MXN')
+
+    if (roleValue === 'admin') {
+      setPermissions(fullPermissions())
+    } else {
+      const { data: perms } = await supabase
+        .from('role_permissions')
+        .select('permission_key, allowed')
+        .eq('business_id', businessIdValue)
+        .eq('role', 'staff')
+      const map = emptyPermissions()
+      for (const p of perms ?? []) {
+        map[p.permission_key as PermissionKey] = p.allowed
+      }
+      setPermissions(map)
+    }
   }
 
   useEffect(() => {
@@ -73,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setBusinessName(null)
         setCurrency('MXN')
         setRole(null)
+        setPermissions(emptyPermissions())
       }
     })
 
@@ -108,6 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     currency,
     role,
     isAdmin: role === 'admin',
+    permissions,
+    can: (key) => permissions[key] === true,
     loading,
     signIn,
     signUp,

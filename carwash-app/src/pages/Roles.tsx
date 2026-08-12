@@ -1,35 +1,25 @@
 import { Check, X } from 'lucide-react'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Card } from '../components/ui/Card'
-
-const PERMISSION_ROWS: { label: string; admin: boolean; staff: boolean }[] = [
-  { label: 'Punto de venta', admin: true, staff: true },
-  { label: 'Citas', admin: true, staff: true },
-  { label: 'Clientes', admin: true, staff: true },
-  { label: 'Ver catálogo (productos y servicios)', admin: true, staff: true },
-  { label: 'Editar precios y catálogo', admin: true, staff: false },
-  { label: 'Compras', admin: true, staff: false },
-  { label: 'Empleados', admin: true, staff: false },
-  { label: 'Gastos y caja', admin: true, staff: false },
-  { label: 'Reportes', admin: true, staff: false },
-  { label: 'Configuración y usuarios', admin: true, staff: false },
-]
-
-function PermCell({ allowed }: { allowed: boolean }) {
-  return allowed ? (
-    <Check size={16} className="mx-auto text-emerald-600" />
-  ) : (
-    <X size={16} className="mx-auto text-slate-300" />
-  )
-}
+import { Loading } from '../components/ui/Loading'
+import { useStaffPermissions, useSetStaffPermission, PERMISSION_LABELS, PERMISSION_ORDER } from '../hooks/useRolePermissions'
+import type { PermissionKey } from '../types/database'
 
 export function Roles() {
+  const { data: staffPerms, isLoading } = useStaffPermissions()
+  const setPermission = useSetStaffPermission()
+
+  function isStaffAllowed(key: PermissionKey) {
+    return staffPerms?.find((p) => p.permission_key === key)?.allowed ?? false
+  }
+
+  function toggleStaff(key: PermissionKey) {
+    setPermission.mutate({ permission_key: key, allowed: !isStaffAllowed(key) })
+  }
+
   return (
     <div>
-      <PageHeader
-        title="Roles"
-        description="Estos son los permisos de cada rol. Se asignan a cada usuario desde 'Crear usuario'."
-      />
+      <PageHeader title="Roles" description="Administrador siempre tiene acceso total. Edita qué puede usar el Operador." />
 
       <Card className="p-0">
         <div className="overflow-x-auto">
@@ -42,17 +32,36 @@ export function Roles() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {PERMISSION_ROWS.map((row) => (
-                <tr key={row.label}>
-                  <td className="px-5 py-2.5 text-slate-700">{row.label}</td>
-                  <td className="px-5 py-2.5 text-center">
-                    <PermCell allowed={row.admin} />
-                  </td>
-                  <td className="px-5 py-2.5 text-center">
-                    <PermCell allowed={row.staff} />
+              {isLoading ? (
+                <tr>
+                  <td colSpan={3} className="px-5 py-6">
+                    <Loading />
                   </td>
                 </tr>
-              ))}
+              ) : (
+                PERMISSION_ORDER.map((key) => (
+                  <tr key={key}>
+                    <td className="px-5 py-2.5 text-slate-700">{PERMISSION_LABELS[key]}</td>
+                    <td className="px-5 py-2.5 text-center">
+                      <Check size={16} className="mx-auto text-emerald-600" />
+                    </td>
+                    <td className="px-5 py-2.5 text-center">
+                      <button
+                        onClick={() => toggleStaff(key)}
+                        disabled={setPermission.isPending}
+                        className="mx-auto flex h-6 w-6 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-100"
+                        title="Click para cambiar"
+                      >
+                        {isStaffAllowed(key) ? (
+                          <Check size={16} className="text-emerald-600" />
+                        ) : (
+                          <X size={16} className="text-slate-300" />
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

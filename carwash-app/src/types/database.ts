@@ -14,6 +14,27 @@ export type CashMovementType = 'apertura' | 'ingreso' | 'egreso' | 'cierre' | 'a
 
 export type MemberRole = 'admin' | 'staff'
 
+export type PermissionKey =
+  | 'pos'
+  | 'citas'
+  | 'clientes'
+  | 'catalogo_ver'
+  | 'catalogo_editar'
+  | 'compras'
+  | 'empleados'
+  | 'caja'
+  | 'reportes'
+  | 'configuracion'
+
+export interface RolePermission {
+  id: string
+  business_id: string
+  role: 'staff'
+  permission_key: PermissionKey
+  allowed: boolean
+  created_at: string
+}
+
 export interface Business {
   id: string
   name: string

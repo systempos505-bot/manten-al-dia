@@ -17,6 +17,7 @@ import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
 import { Users } from './pages/Users'
 import { Roles } from './pages/Roles'
+import type { PermissionKey } from './types/database'
 
 function Protected() {
   const { session, loading, businessId } = useAuth()
@@ -41,6 +42,12 @@ function RequireAdmin({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+function RequirePermission({ permission, children }: { permission: PermissionKey; children: ReactNode }) {
+  const { can } = useAuth()
+  if (!can(permission)) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -55,48 +62,76 @@ export default function App() {
         />
         <Route element={<Protected />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/pos" element={<Pos />} />
-          <Route path="/citas" element={<Appointments />} />
-          <Route path="/clientes" element={<Clients />} />
-          <Route path="/catalogo" element={<Catalog />} />
+          <Route
+            path="/pos"
+            element={
+              <RequirePermission permission="pos">
+                <Pos />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/citas"
+            element={
+              <RequirePermission permission="citas">
+                <Appointments />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/clientes"
+            element={
+              <RequirePermission permission="clientes">
+                <Clients />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/catalogo"
+            element={
+              <RequirePermission permission="catalogo_ver">
+                <Catalog />
+              </RequirePermission>
+            }
+          />
           <Route
             path="/compras"
             element={
-              <RequireAdmin>
+              <RequirePermission permission="compras">
                 <Purchases />
-              </RequireAdmin>
+              </RequirePermission>
             }
           />
           <Route
             path="/empleados"
             element={
-              <RequireAdmin>
+              <RequirePermission permission="empleados">
                 <Employees />
-              </RequireAdmin>
+              </RequirePermission>
             }
           />
           <Route
             path="/caja"
             element={
-              <RequireAdmin>
+              <RequirePermission permission="caja">
                 <CashAndExpenses />
-              </RequireAdmin>
+              </RequirePermission>
             }
           />
           <Route
             path="/reportes"
             element={
-              <RequireAdmin>
+              <RequirePermission permission="reportes">
                 <Reports />
-              </RequireAdmin>
+              </RequirePermission>
             }
           />
           <Route
             path="/configuracion"
             element={
-              <RequireAdmin>
+              <RequirePermission permission="configuracion">
                 <Settings />
-              </RequireAdmin>
+              </RequirePermission>
             }
           />
           <Route

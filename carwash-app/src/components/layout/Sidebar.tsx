@@ -17,18 +17,19 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import type { PermissionKey } from '../../types/database'
 
-const links = [
-  { to: '/', label: 'Inicio', icon: LayoutDashboard, end: true, adminOnly: false },
-  { to: '/pos', label: 'Punto de venta', icon: ShoppingCart, adminOnly: false },
-  { to: '/citas', label: 'Citas', icon: CalendarClock, adminOnly: false },
-  { to: '/clientes', label: 'Clientes', icon: Users, adminOnly: false },
-  { to: '/catalogo', label: 'Productos y servicios', icon: Package, adminOnly: false },
-  { to: '/compras', label: 'Compras', icon: Truck, adminOnly: true },
-  { to: '/empleados', label: 'Empleados', icon: UserRound, adminOnly: true },
-  { to: '/caja', label: 'Gastos y caja', icon: Wallet, adminOnly: true },
-  { to: '/reportes', label: 'Reportes', icon: BarChart3, adminOnly: true },
-  { to: '/configuracion', label: 'Configuración', icon: SettingsIcon, adminOnly: true },
+const links: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; permission: PermissionKey | null }[] = [
+  { to: '/', label: 'Inicio', icon: LayoutDashboard, end: true, permission: null },
+  { to: '/pos', label: 'Punto de venta', icon: ShoppingCart, permission: 'pos' },
+  { to: '/citas', label: 'Citas', icon: CalendarClock, permission: 'citas' },
+  { to: '/clientes', label: 'Clientes', icon: Users, permission: 'clientes' },
+  { to: '/catalogo', label: 'Productos y servicios', icon: Package, permission: 'catalogo_ver' },
+  { to: '/compras', label: 'Compras', icon: Truck, permission: 'compras' },
+  { to: '/empleados', label: 'Empleados', icon: UserRound, permission: 'empleados' },
+  { to: '/caja', label: 'Gastos y caja', icon: Wallet, permission: 'caja' },
+  { to: '/reportes', label: 'Reportes', icon: BarChart3, permission: 'reportes' },
+  { to: '/configuracion', label: 'Configuración', icon: SettingsIcon, permission: 'configuracion' },
 ]
 
 const userGroupLinks = [
@@ -42,9 +43,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
-  const { businessName, user, isAdmin, signOut } = useAuth()
+  const { businessName, user, isAdmin, can, signOut } = useAuth()
   const location = useLocation()
-  const visibleLinks = links.filter((link) => !link.adminOnly || isAdmin)
+  const visibleLinks = links.filter((link) => link.permission === null || can(link.permission))
   const userGroupActive = location.pathname.startsWith('/usuarios')
   const [userGroupOpen, setUserGroupOpen] = useState(userGroupActive)
 

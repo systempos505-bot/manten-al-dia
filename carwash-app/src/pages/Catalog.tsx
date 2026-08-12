@@ -29,7 +29,8 @@ const emptyForm = {
 
 export function Catalog() {
   const formatMoney = useFormatCurrency()
-  const { isAdmin } = useAuth()
+  const { can } = useAuth()
+  const canEdit = can('catalogo_editar')
   const [tab, setTab] = useState<CatalogItemType>('service')
   const { data: items, isLoading } = useCatalogItems(tab)
   const saveItem = useSaveCatalogItem()
@@ -83,7 +84,7 @@ export function Catalog() {
         title="Productos y servicios"
         description="Catálogo de servicios de lavado, productos e insumos con control de inventario"
         action={
-          isAdmin && (
+          canEdit && (
             <Button onClick={openNew}>
               <Plus size={16} /> Nuevo
             </Button>
@@ -121,7 +122,7 @@ export function Catalog() {
                   {tab === 'product' && <th className="px-5 py-3">Costo</th>}
                   {tab === 'product' && <th className="px-5 py-3">Stock</th>}
                   <th className="px-5 py-3">Estado</th>
-                  {isAdmin && <th className="px-5 py-3"></th>}
+                  {canEdit && <th className="px-5 py-3"></th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -150,7 +151,7 @@ export function Catalog() {
                       <td className="px-5 py-3">
                         {item.active ? <Badge tone="green">Activo</Badge> : <Badge tone="gray">Inactivo</Badge>}
                       </td>
-                      {isAdmin && (
+                      {canEdit && (
                         <td className="px-5 py-3">
                           <div className="flex justify-end gap-1">
                             <button onClick={() => openEdit(item)} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
