@@ -306,7 +306,7 @@ export function Pos() {
                       <Plus size={12} />
                     </button>
                   </div>
-                  <p className="w-16 shrink-0 text-right text-sm font-bold">{formatMoney(it.qty * it.unit_price)}</p>
+                  <p className="w-24 shrink-0 whitespace-nowrap text-right text-sm font-bold">{formatMoney(it.qty * it.unit_price)}</p>
                   <button onClick={() => removeFromCart(it.item_id)} className="shrink-0 text-slate-400 hover:text-red-600">
                     <Trash2 size={13} />
                   </button>
