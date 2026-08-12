@@ -65,31 +65,34 @@ function NavGroup({
   basePath,
   links: groupLinks,
   onNavigate,
+  isOpen,
+  onToggle,
 }: {
   icon: ReactNode
   label: string
   basePath: string
   links: { to: string; label: string }[]
   onNavigate: () => void
+  isOpen: boolean
+  onToggle: () => void
 }) {
   const location = useLocation()
   const active = location.pathname.startsWith(basePath)
-  const [open, setOpen] = useState(active)
 
   return (
     <div>
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
         className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
           active ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
         }`}
       >
         {icon}
         <span className="flex-1 text-left">{label}</span>
-        <ChevronDown size={16} className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
+      {isOpen && (
         <div className="ml-4 mt-1 grid gap-1 border-l border-white/10 pl-3">
           {groupLinks.map(({ to, label: linkLabel }) => (
             <NavLink
@@ -112,12 +115,30 @@ function NavGroup({
   )
 }
 
+const NAV_GROUPS = ['gastos', 'reportes', 'configuracion', 'usuarios'] as const
+type NavGroupKey = (typeof NAV_GROUPS)[number]
+
+const GROUP_BASE_PATHS: Record<NavGroupKey, string> = {
+  gastos: '/gastos',
+  reportes: '/reportes',
+  configuracion: '/configuracion',
+  usuarios: '/usuarios',
+}
+
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { businessName, user, isAdmin, can, signOut, logoUrl } = useAuth()
+  const location = useLocation()
   const visibleLinks = links.filter((link) => link.permission === null || can(link.permission))
   const canConfig = can('configuracion')
   const canReports = can('reportes')
   const canCash = can('caja')
+
+  const activeGroup = NAV_GROUPS.find((key) => location.pathname.startsWith(GROUP_BASE_PATHS[key])) ?? null
+  const [openGroup, setOpenGroup] = useState<NavGroupKey | null>(activeGroup)
+
+  function toggleGroup(key: NavGroupKey) {
+    setOpenGroup((current) => (current === key ? null : key))
+  }
 
   return (
     <>
@@ -172,6 +193,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               basePath="/gastos"
               links={expenseGroupLinks}
               onNavigate={onClose}
+              isOpen={openGroup === 'gastos'}
+              onToggle={() => toggleGroup('gastos')}
             />
           )}
 
@@ -182,6 +205,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               basePath="/reportes"
               links={reportGroupLinks}
               onNavigate={onClose}
+              isOpen={openGroup === 'reportes'}
+              onToggle={() => toggleGroup('reportes')}
             />
           )}
 
@@ -192,6 +217,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               basePath="/configuracion"
               links={configGroupLinks}
               onNavigate={onClose}
+              isOpen={openGroup === 'configuracion'}
+              onToggle={() => toggleGroup('configuracion')}
             />
           )}
 
@@ -202,6 +229,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               basePath="/usuarios"
               links={userGroupLinks}
               onNavigate={onClose}
+              isOpen={openGroup === 'usuarios'}
+              onToggle={() => toggleGroup('usuarios')}
             />
           )}
         </nav>
