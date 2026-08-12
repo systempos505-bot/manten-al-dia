@@ -561,8 +561,8 @@ export function Pos() {
                 <p className="text-sm text-slate-400 py-6 text-center">Aún no hay pagos. Agregá uno para empezar.</p>
               ) : (
                 multiPayments.map((p) => (
-                  <div key={p.id} className="flex gap-2 items-end border border-slate-200 rounded-lg p-3">
-                    <Field label="Método" className="flex-1 min-w-0">
+                  <div key={p.id} className="flex flex-wrap gap-2 items-end border border-slate-200 rounded-lg p-3">
+                    <Field label="Método" className="min-w-[140px] flex-1 basis-full sm:basis-auto">
                       <Select value={p.method} onChange={(e) => updateMultiPayment(p.id, 'method', e.target.value)}>
                         <option value="efectivo">Efectivo</option>
                         <option value="tarjeta">Tarjeta</option>
@@ -570,7 +570,7 @@ export function Pos() {
                         <option value="otro">Otro</option>
                       </Select>
                     </Field>
-                    <Field label="Monto" className="flex-1 min-w-0">
+                    <Field label="Monto" className="min-w-[90px] flex-1">
                       <Input
                         type="number"
                         step="0.01"
