@@ -30,8 +30,11 @@ export function useBusinessMembers() {
 export function useUpdateMemberRole() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, role }: { id: string; role: MemberRole }) => {
-      const { error } = await supabase.from('business_members').update({ role }).eq('id', id)
+    mutationFn: async ({ id, role, customRoleId }: { id: string; role: MemberRole; customRoleId?: string | null }) => {
+      const { error } = await supabase
+        .from('business_members')
+        .update({ role, custom_role_id: role === 'admin' ? null : customRoleId ?? null })
+        .eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['business_members'] }),

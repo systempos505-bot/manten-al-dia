@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadBusiness(userId: string) {
     const { data, error } = await supabase
       .from('business_members')
-      .select('business_id, role, businesses(name, currency)')
+      .select('business_id, role, custom_role_id, businesses(name, currency)')
       .eq('user_id', userId)
       .limit(1)
       .maybeSingle()
@@ -74,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const businessIdValue = data.business_id as string
     const roleValue = data.role as MemberRole
+    const customRoleId = data.custom_role_id as string | null
     setBusinessId(businessIdValue)
     setRole(roleValue)
     const business = data.businesses as unknown as { name: string; currency: string } | null
@@ -82,6 +83,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (roleValue === 'admin') {
       setPermissions(fullPermissions())
+    } else if (customRoleId) {
+      const { data: perms } = await supabase
+        .from('custom_role_permissions')
+        .select('permission_key, allowed')
+        .eq('custom_role_id', customRoleId)
+      const map = emptyPermissions()
+      for (const p of perms ?? []) {
+        map[p.permission_key as PermissionKey] = p.allowed
+      }
+      setPermissions(map)
     } else {
       const { data: perms } = await supabase
         .from('role_permissions')

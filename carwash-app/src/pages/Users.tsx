@@ -18,6 +18,7 @@ import {
   useCreateInvite,
   useRevokeInvite,
 } from '../hooks/useTeam'
+import { useCustomRoles } from '../hooks/useCustomRoles'
 import { formatDate } from '../lib/format'
 import type { BusinessMember, MemberRole } from '../types/database'
 
@@ -31,6 +32,7 @@ export function Users() {
   const { data: members, isLoading: loadingMembers } = useBusinessMembers()
   const updateRole = useUpdateMemberRole()
   const removeMember = useRemoveMember()
+  const { data: customRoles } = useCustomRoles()
 
   const { data: invites, isLoading: loadingInvites } = useInvites()
   const createInvite = useCreateInvite()
@@ -40,13 +42,21 @@ export function Users() {
 
   const [search, setSearch] = useState('')
   const [editModal, setEditModal] = useState<BusinessMember | null>(null)
-  const [editRole, setEditRole] = useState<MemberRole>('staff')
+  const [editRoleValue, setEditRoleValue] = useState('staff')
   const [viewMember, setViewMember] = useState<BusinessMember | null>(null)
   const [confirmRemove, setConfirmRemove] = useState<BusinessMember | null>(null)
 
   const filteredMembers = (members ?? []).filter((m) =>
     (m.email || '').toLowerCase().includes(search.toLowerCase()),
   )
+
+  function memberRoleName(m: BusinessMember) {
+    if (m.role === 'admin') return roleLabel.admin
+    if (m.custom_role_id) {
+      return customRoles?.find((r) => r.id === m.custom_role_id)?.name || 'Operador'
+    }
+    return 'Operador'
+  }
 
   async function copyCode(code: string) {
     try {
@@ -59,13 +69,19 @@ export function Users() {
   }
 
   function openEdit(m: BusinessMember) {
-    setEditRole(m.role)
+    setEditRoleValue(m.role === 'admin' ? 'admin' : m.custom_role_id ? `custom:${m.custom_role_id}` : 'staff')
     setEditModal(m)
   }
 
   async function saveEdit() {
     if (!editModal) return
-    await updateRole.mutateAsync({ id: editModal.id, role: editRole })
+    if (editRoleValue === 'admin') {
+      await updateRole.mutateAsync({ id: editModal.id, role: 'admin' })
+    } else if (editRoleValue.startsWith('custom:')) {
+      await updateRole.mutateAsync({ id: editModal.id, role: 'staff', customRoleId: editRoleValue.slice(7) })
+    } else {
+      await updateRole.mutateAsync({ id: editModal.id, role: 'staff', customRoleId: null })
+    }
     setEditModal(null)
   }
 
@@ -91,6 +107,9 @@ export function Users() {
               <UserPlus size={16} /> Generar código
             </Button>
           </div>
+          <p className="mt-2 text-xs text-slate-400">
+            Los roles personalizados se asignan después desde "Editar" en la lista de usuarios.
+          </p>
 
           <div className="mt-5">
             {loadingInvites ? (
@@ -166,7 +185,7 @@ export function Users() {
                         )}
                       </td>
                       <td className="px-5 py-3">
-                        <Badge tone={m.role === 'admin' ? 'blue' : 'gray'}>{roleLabel[m.role]}</Badge>
+                        <Badge tone={m.role === 'admin' ? 'blue' : 'gray'}>{memberRoleName(m)}</Badge>
                       </td>
                       <td className="px-5 py-3 text-slate-500">{formatDate(m.created_at)}</td>
                       <td className="px-5 py-3">
@@ -207,9 +226,14 @@ export function Users() {
             <Input value={editModal?.email || ''} disabled />
           </Field>
           <Field label="Rol">
-            <Select value={editRole} onChange={(e) => setEditRole(e.target.value as MemberRole)}>
+            <Select value={editRoleValue} onChange={(e) => setEditRoleValue(e.target.value)}>
               <option value="admin">Administrador</option>
               <option value="staff">Operador</option>
+              {customRoles?.map((r) => (
+                <option key={r.id} value={`custom:${r.id}`}>
+                  {r.name}
+                </option>
+              ))}
             </Select>
           </Field>
           <Button onClick={saveEdit} disabled={updateRole.isPending}>
@@ -227,7 +251,7 @@ export function Users() {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase text-slate-400">Rol</p>
-              <p className="font-semibold text-slate-800">{roleLabel[viewMember.role]}</p>
+              <p className="font-semibold text-slate-800">{memberRoleName(viewMember)}</p>
             </div>
             <div>
               <p className="text-xs font-semibold uppercase text-slate-400">Usuario desde</p>

@@ -35,6 +35,21 @@ export interface RolePermission {
   created_at: string
 }
 
+export interface CustomRole {
+  id: string
+  business_id: string
+  name: string
+  created_at: string
+}
+
+export interface CustomRolePermission {
+  id: string
+  business_id: string
+  custom_role_id: string
+  permission_key: PermissionKey
+  allowed: boolean
+}
+
 export interface Business {
   id: string
   name: string
@@ -49,6 +64,7 @@ export interface BusinessMember {
   business_id: string
   user_id: string
   role: MemberRole
+  custom_role_id: string | null
   email: string | null
   created_at: string
 }
