@@ -257,7 +257,64 @@ function InvitesSection() {
 }
 
 // ========== Módulo: Tipos de Vehículos ==========
-function VehicleTypesSection() {
+function VehicleTypesCard({
+  vehicleTypes,
+  loadingTypes,
+  openNewType,
+  openEditType,
+  setConfirmDelete,
+}: {
+  vehicleTypes: VehicleTypeItem[] | undefined
+  loadingTypes: boolean
+  openNewType: () => void
+  openEditType: (t: VehicleTypeItem) => void
+  setConfirmDelete: (item: VehicleTypeItem | null) => void
+}) {
+  return (
+    <Card className="p-0">
+      <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div>
+          <p className="font-bold text-slate-800">Tipos de Vehículos</p>
+          <p className="mt-1 text-sm text-slate-500">Gestiona los tipos de vehículos para tu negocio</p>
+        </div>
+        <Button onClick={openNewType} size="sm">
+          <Plus size={16} /> Agregar
+        </Button>
+      </div>
+      {loadingTypes ? (
+        <Loading />
+      ) : !vehicleTypes || vehicleTypes.length === 0 ? (
+        <EmptyState title="Sin tipos de vehículos" />
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {vehicleTypes.map((t) => (
+            <li key={t.id} className="flex items-center justify-between px-5 py-3.5">
+              <div>
+                <p className="font-semibold text-slate-800">{t.name}</p>
+              </div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => openEditType(t)}
+                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(t)}
+                  className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  )
+}
+
+export function Settings() {
   const { data: vehicleTypes, isLoading: loadingTypes } = useVehicleTypes()
   const saveVehicleType = useSaveVehicleType()
   const deleteVehicleType = useDeleteVehicleType()
@@ -283,46 +340,21 @@ function VehicleTypesSection() {
 
   return (
     <div>
-      <Card className="p-0">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <div>
-            <p className="font-bold text-slate-800">Tipos de Vehículos</p>
-            <p className="mt-1 text-sm text-slate-500">Gestiona los tipos de vehículos para tu negocio</p>
-          </div>
-          <Button onClick={openNewType} size="sm">
-            <Plus size={16} /> Agregar
-          </Button>
-        </div>
-        {loadingTypes ? (
-          <Loading />
-        ) : !vehicleTypes || vehicleTypes.length === 0 ? (
-          <EmptyState title="Sin tipos de vehículos" />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {vehicleTypes.map((t) => (
-              <li key={t.id} className="flex items-center justify-between px-5 py-3.5">
-                <div>
-                  <p className="font-semibold text-slate-800">{t.name}</p>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => openEditType(t)}
-                    className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(t)}
-                    className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <PageHeader title="Configuración" description="Gestiona tu empresa, roles, usuarios y configuraciones" />
+
+      <div className="grid gap-6">
+        <CompanyConfigSection />
+        <RolesPermissionsSection />
+        <UsersAccessSection />
+        <InvitesSection />
+        <VehicleTypesCard
+          vehicleTypes={vehicleTypes}
+          loadingTypes={loadingTypes}
+          openNewType={openNewType}
+          openEditType={openEditType}
+          setConfirmDelete={setConfirmDelete}
+        />
+      </div>
 
       <Modal
         open={typeModal.open}
@@ -353,22 +385,6 @@ function VehicleTypesSection() {
           setConfirmDelete(null)
         }}
       />
-    </div>
-  )
-}
-
-export function Settings() {
-  return (
-    <div>
-      <PageHeader title="Configuración" description="Gestiona tu empresa, roles, usuarios y configuraciones" />
-
-      <div className="grid gap-6">
-        <CompanyConfigSection />
-        <RolesPermissionsSection />
-        <UsersAccessSection />
-        <InvitesSection />
-        <VehicleTypesSection />
-      </div>
     </div>
   )
 }
