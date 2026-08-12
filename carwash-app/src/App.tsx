@@ -15,6 +15,7 @@ import { Pos } from './pages/Pos'
 import { Cash } from './pages/Cash'
 import { CreateExpense } from './pages/expenses/CreateExpense'
 import { ExpensesList } from './pages/expenses/ExpensesList'
+import { ExpenseCategories } from './pages/expenses/ExpenseCategories'
 import { SalesReport } from './pages/reports/SalesReport'
 import { ExpensesReport } from './pages/reports/ExpensesReport'
 import { AppointmentsReport } from './pages/reports/AppointmentsReport'
@@ -137,6 +138,14 @@ export default function App() {
             element={
               <RequirePermission permission="caja">
                 <ExpensesList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/gastos/categorias"
+            element={
+              <RequirePermission permission="caja">
+                <ExpenseCategories />
               </RequirePermission>
             }
           />

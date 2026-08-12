@@ -1,18 +1,26 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Field, Input, Select } from '../../components/ui/Input'
 import { useCreateExpense } from '../../hooks/useExpenses'
+import { useExpenseCategories } from '../../hooks/useExpenseCategories'
 import { todayISODate } from '../../lib/format'
 import type { PaymentMethod } from '../../types/database'
 
-const emptyExpense = { category: 'General', description: '', amount: '0', expense_date: todayISODate(), payment_method: 'efectivo' as PaymentMethod }
+const emptyExpense = { category: '', description: '', amount: '0', expense_date: todayISODate(), payment_method: 'efectivo' as PaymentMethod }
 
 export function CreateExpense() {
   const createExpense = useCreateExpense()
+  const { data: categories } = useExpenseCategories()
   const [expenseForm, setExpenseForm] = useState(emptyExpense)
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!expenseForm.category && categories && categories.length > 0) {
+      setExpenseForm((f) => ({ ...f, category: categories[0].name }))
+    }
+  }, [categories, expenseForm.category])
 
   async function submitExpense() {
     await createExpense.mutateAsync({
@@ -22,7 +30,7 @@ export function CreateExpense() {
       expense_date: expenseForm.expense_date,
       payment_method: expenseForm.payment_method,
     })
-    setExpenseForm(emptyExpense)
+    setExpenseForm({ ...emptyExpense, category: expenseForm.category })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -34,11 +42,14 @@ export function CreateExpense() {
       <Card className="max-w-xl">
         <div className="grid gap-4">
           <Field label="Categoría">
-            <Input
-              value={expenseForm.category}
-              onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-              placeholder="Renta, agua, luz, sueldos..."
-            />
+            <Select value={expenseForm.category} onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}>
+              <option value="">Selecciona una categoría</option>
+              {categories?.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label="Descripción">
             <Input value={expenseForm.description} onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })} />
@@ -60,7 +71,7 @@ export function CreateExpense() {
             </Select>
           </Field>
           <div className="flex items-center gap-3">
-            <Button disabled={createExpense.isPending} onClick={submitExpense}>
+            <Button disabled={!expenseForm.category || createExpense.isPending} onClick={submitExpense}>
               {createExpense.isPending ? 'Guardando...' : 'Registrar gasto'}
             </Button>
             {saved && <span className="text-sm font-semibold text-emerald-600">Guardado ✓</span>}

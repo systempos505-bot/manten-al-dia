@@ -186,6 +186,15 @@ export interface VehicleTypeItem {
   created_at: string
 }
 
+export interface ExpenseCategoryItem {
+  id: string
+  business_id: string
+  name: string
+  active: boolean
+  sort_order: number
+  created_at: string
+}
+
 export interface Appointment {
   id: string
   business_id: string

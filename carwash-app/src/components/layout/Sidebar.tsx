@@ -34,6 +34,7 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; end?: bo
 const expenseGroupLinks = [
   { to: '/gastos/crear', label: 'Crear Gasto' },
   { to: '/gastos/lista', label: 'Lista de Gastos' },
+  { to: '/gastos/categorias', label: 'Categoría de Gastos' },
 ]
 
 const configGroupLinks = [
