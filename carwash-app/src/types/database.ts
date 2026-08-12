@@ -132,6 +132,15 @@ export interface Bay {
   created_at: string
 }
 
+export interface VehicleTypeItem {
+  id: string
+  business_id: string
+  name: string
+  active: boolean
+  sort_order: number
+  created_at: string
+}
+
 export interface Appointment {
   id: string
   business_id: string

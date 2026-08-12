@@ -16,15 +16,17 @@ import {
   useSaveVehicle,
   useDeleteVehicle,
 } from '../hooks/useClients'
-import type { Client, Vehicle, VehicleType } from '../types/database'
+import { useVehicleTypes } from '../hooks/useVehicleTypes'
+import type { Client, Vehicle } from '../types/database'
 
 const emptyClient = { full_name: '', phone: '', email: '', notes: '' }
-const emptyVehicle = { vehicle_type: 'auto' as VehicleType, brand: '', model: '', color: '', plate: '', notes: '' }
+const emptyVehicle = { vehicle_type: '', brand: '', model: '', color: '', plate: '', notes: '' }
 
 export function Clients() {
   const [search, setSearch] = useState('')
   const { data: clients, isLoading } = useClients(search)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { data: vehicleTypes } = useVehicleTypes()
 
   const [clientModal, setClientModal] = useState<{ open: boolean; editing: Client | null }>({ open: false, editing: null })
   const [clientForm, setClientForm] = useState(emptyClient)
@@ -57,7 +59,8 @@ export function Clients() {
   }
 
   function openNewVehicle() {
-    setVehicleForm(emptyVehicle)
+    const defaultType = vehicleTypes?.[0]?.name || ''
+    setVehicleForm({ ...emptyVehicle, vehicle_type: defaultType })
     setVehicleModal({ open: true, editing: null })
   }
 
@@ -227,11 +230,13 @@ export function Clients() {
       <Modal open={vehicleModal.open} title={vehicleModal.editing ? 'Editar vehículo' : 'Nuevo vehículo'} onClose={() => setVehicleModal({ open: false, editing: null })}>
         <div className="grid gap-4">
           <Field label="Tipo">
-            <Select value={vehicleForm.vehicle_type} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicle_type: e.target.value as VehicleType })}>
-              <option value="auto">Auto</option>
-              <option value="camioneta">Camioneta</option>
-              <option value="moto">Moto</option>
-              <option value="otro">Otro</option>
+            <Select value={vehicleForm.vehicle_type} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicle_type: e.target.value })}>
+              <option value="">Selecciona un tipo</option>
+              {vehicleTypes?.map((t) => (
+                <option key={t.id} value={t.name}>
+                  {t.name}
+                </option>
+              ))}
             </Select>
           </Field>
           <div className="grid grid-cols-2 gap-4">
