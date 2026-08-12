@@ -23,6 +23,8 @@ interface AuthState {
   businessId: string | null
   businessName: string | null
   currency: string
+  secondaryCurrency: string | null
+  exchangeRate: number
   currencyDecimals: number
   quantityDecimals: number
   dateFormat: DateFormat
@@ -59,6 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [businessId, setBusinessId] = useState<string | null>(null)
   const [businessName, setBusinessName] = useState<string | null>(null)
   const [currency, setCurrency] = useState('MXN')
+  const [secondaryCurrency, setSecondaryCurrency] = useState<string | null>(null)
+  const [exchangeRate, setExchangeRate] = useState(1)
   const [currencyDecimals, setCurrencyDecimals] = useState(2)
   const [quantityDecimals, setQuantityDecimals] = useState(2)
   const [dateFormat, setDateFormat] = useState<DateFormat>('DD/MM/YYYY')
@@ -71,6 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBusinessId(null)
     setBusinessName(null)
     setCurrency('MXN')
+    setSecondaryCurrency(null)
+    setExchangeRate(1)
     setCurrencyDecimals(2)
     setQuantityDecimals(2)
     setDateFormat('DD/MM/YYYY')
@@ -85,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from('business_members')
       .select(
-        'business_id, role, custom_role_id, businesses(name, currency, currency_decimals, quantity_decimals, date_format, time_format, logo_url)',
+        'business_id, role, custom_role_id, businesses(name, currency, secondary_currency, exchange_rate, currency_decimals, quantity_decimals, date_format, time_format, logo_url)',
       )
       .eq('user_id', userId)
       .limit(1)
@@ -103,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const business = data.businesses as unknown as {
       name: string
       currency: string
+      secondary_currency: string | null
+      exchange_rate: number
       currency_decimals: number
       quantity_decimals: number
       date_format: DateFormat
@@ -111,6 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } | null
     setBusinessName(business?.name ?? null)
     setCurrency(business?.currency || 'MXN')
+    setSecondaryCurrency(business?.secondary_currency ?? null)
+    setExchangeRate(business?.exchange_rate ?? 1)
     setCurrencyDecimals(business?.currency_decimals ?? 2)
     setQuantityDecimals(business?.quantity_decimals ?? 2)
     const df = business?.date_format || 'DD/MM/YYYY'
@@ -195,6 +205,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     businessId,
     businessName,
     currency,
+    secondaryCurrency,
+    exchangeRate,
     currencyDecimals,
     quantityDecimals,
     dateFormat,

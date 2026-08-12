@@ -104,6 +104,8 @@ export function useUpdateBusiness() {
     mutationFn: async (input: {
       name: string
       currency: string
+      secondary_currency?: string | null
+      exchange_rate?: number
       date_format?: string
       time_format?: string
       logo_url?: string | null

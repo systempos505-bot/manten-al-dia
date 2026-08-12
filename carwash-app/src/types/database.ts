@@ -58,6 +58,8 @@ export interface Business {
   name: string
   owner_user_id: string
   currency: string
+  secondary_currency: string | null
+  exchange_rate: number
   date_format: DateFormat
   time_format: TimeFormat
   logo_url: string | null

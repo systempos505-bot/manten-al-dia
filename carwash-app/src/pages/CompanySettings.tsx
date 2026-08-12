@@ -24,13 +24,26 @@ const TIME_FORMAT_OPTIONS: { value: TimeFormat; label: string }[] = [
 const DECIMAL_OPTIONS = [0, 1, 2, 3, 4]
 
 export function CompanySettings() {
-  const { businessId, businessName, currency, currencyDecimals, quantityDecimals, dateFormat, timeFormat, logoUrl, refreshBusiness } =
-    useAuth()
+  const {
+    businessId,
+    businessName,
+    currency,
+    secondaryCurrency,
+    exchangeRate,
+    currencyDecimals,
+    quantityDecimals,
+    dateFormat,
+    timeFormat,
+    logoUrl,
+    refreshBusiness,
+  } = useAuth()
   const updateBusiness = useUpdateBusiness()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [name, setName] = useState(businessName || '')
   const [curr, setCurr] = useState(currency)
+  const [secondaryCurr, setSecondaryCurr] = useState(secondaryCurrency || '')
+  const [rate, setRate] = useState(String(exchangeRate))
   const [dFormat, setDFormat] = useState<DateFormat>(dateFormat)
   const [tFormat, setTFormat] = useState<TimeFormat>(timeFormat)
   const [currDecimals, setCurrDecimals] = useState(currencyDecimals)
@@ -42,16 +55,20 @@ export function CompanySettings() {
   useEffect(() => {
     setName(businessName || '')
     setCurr(currency)
+    setSecondaryCurr(secondaryCurrency || '')
+    setRate(String(exchangeRate))
     setDFormat(dateFormat)
     setTFormat(timeFormat)
     setCurrDecimals(currencyDecimals)
     setQtyDecimals(quantityDecimals)
-  }, [businessName, currency, dateFormat, timeFormat, currencyDecimals, quantityDecimals])
+  }, [businessName, currency, secondaryCurrency, exchangeRate, dateFormat, timeFormat, currencyDecimals, quantityDecimals])
 
   async function saveBusiness() {
     await updateBusiness.mutateAsync({
       name,
       currency: curr,
+      secondary_currency: secondaryCurr || null,
+      exchange_rate: Number(rate) || 1,
       date_format: dFormat,
       time_format: tFormat,
       currency_decimals: currDecimals,
@@ -138,6 +155,35 @@ export function CompanySettings() {
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoChange} />
               {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
             </div>
+          </div>
+        </Card>
+
+        <Card>
+          <p className="mb-1 font-bold text-slate-800">Moneda Secundaria y Tasa de Cambio</p>
+          <p className="mb-4 text-sm text-slate-500">
+            Para calcular el cambio en el Punto de Venta cuando el cliente paga en otra moneda (ej. dólares).
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Moneda secundaria">
+              <Select value={secondaryCurr} onChange={(e) => setSecondaryCurr(e.target.value)}>
+                <option value="">Ninguna</option>
+                {CURRENCY_OPTIONS.filter((c) => c.code !== curr).map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={`Tasa de cambio (1 ${secondaryCurr || '...'} = X ${curr})`}>
+              <Input
+                type="number"
+                step="0.0001"
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
+                disabled={!secondaryCurr}
+                placeholder="Ej. 36.60"
+              />
+            </Field>
           </div>
         </Card>
 

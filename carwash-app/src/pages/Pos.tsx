@@ -12,13 +12,15 @@ import { useEmployees, useSaveEmployee } from '../hooks/useEmployees'
 import { useBays, useSaveBay } from '../hooks/useBays'
 import { useCreateSale, useSales, type SaleDraftItem } from '../hooks/useSales'
 import { useFormatCurrency } from '../hooks/useCurrency'
-import { formatDateTime } from '../lib/format'
+import { formatCurrency, formatDateTime } from '../lib/format'
+import { useAuth } from '../context/AuthContext'
 import type { CatalogItemType, PaymentMethod } from '../types/database'
 
 type QuickAddKind = 'client' | 'employee' | 'bay' | null
 
 export function Pos() {
   const formatMoney = useFormatCurrency()
+  const { currency: mainCurrency, secondaryCurrency, exchangeRate, currencyDecimals } = useAuth()
   const { data: services } = useCatalogItems('service')
   const { data: products } = useCatalogItems('product')
   const { data: clients } = useClients()
@@ -59,9 +61,26 @@ export function Pos() {
   const [discount, setDiscount] = useState('0')
   const [cart, setCart] = useState<SaleDraftItem[]>([])
   const [success, setSuccess] = useState(false)
+  const [receivedAmount, setReceivedAmount] = useState('')
+  const [paymentCurrency, setPaymentCurrency] = useState(mainCurrency)
+  const [changeCurrency, setChangeCurrency] = useState(mainCurrency)
 
   const subtotal = cart.reduce((sum, it) => sum + it.qty * it.unit_price, 0)
   const total = Math.max(subtotal - (Number(discount) || 0), 0)
+
+  function toMain(amount: number, curr: string) {
+    return curr === secondaryCurrency ? amount * exchangeRate : amount
+  }
+  function fromMain(amountMain: number, curr: string) {
+    return curr === secondaryCurrency ? amountMain / exchangeRate : amountMain
+  }
+  function formatInCurrency(amount: number, curr: string) {
+    return formatCurrency(amount, curr, currencyDecimals)
+  }
+
+  const receivedMain = toMain(Number(receivedAmount) || 0, paymentCurrency)
+  const changeMain = receivedMain - total
+  const changeDisplay = fromMain(Math.max(changeMain, 0), changeCurrency)
 
   function addToCart(itemId: string) {
     const item = sellableItems.find((i) => i.id === itemId)
@@ -109,6 +128,7 @@ export function Pos() {
     })
     setCart([])
     setDiscount('0')
+    setReceivedAmount('')
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2500)
   }
@@ -396,6 +416,55 @@ export function Pos() {
                 </Select>
               </Field>
             </div>
+
+            {paymentMethod === 'efectivo' && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className={secondaryCurrency ? 'grid grid-cols-2 gap-3' : ''}>
+                  <Field label="Monto recibido">
+                    <div className="flex gap-1.5">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={receivedAmount}
+                        onChange={(e) => setReceivedAmount(e.target.value)}
+                        placeholder="0.00"
+                        className="flex-1"
+                      />
+                      {secondaryCurrency && (
+                        <Select
+                          value={paymentCurrency}
+                          onChange={(e) => setPaymentCurrency(e.target.value)}
+                          className="w-24 shrink-0"
+                        >
+                          <option value={mainCurrency}>{mainCurrency}</option>
+                          <option value={secondaryCurrency}>{secondaryCurrency}</option>
+                        </Select>
+                      )}
+                    </div>
+                  </Field>
+                  {secondaryCurrency && (
+                    <Field label="Dar cambio en">
+                      <Select value={changeCurrency} onChange={(e) => setChangeCurrency(e.target.value)}>
+                        <option value={mainCurrency}>{mainCurrency}</option>
+                        <option value={secondaryCurrency}>{secondaryCurrency}</option>
+                      </Select>
+                    </Field>
+                  )}
+                </div>
+                {Number(receivedAmount) > 0 && (
+                  <div className="mt-2.5 flex items-center justify-between border-t border-slate-200 pt-2.5 text-sm">
+                    <span className="font-semibold text-slate-600">
+                      {changeMain < 0 ? 'Falta' : 'Cambio a devolver'}
+                    </span>
+                    <span className={`text-base font-extrabold ${changeMain < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {changeMain < 0
+                        ? formatInCurrency(Math.abs(changeMain), mainCurrency)
+                        : formatInCurrency(changeDisplay, changeCurrency)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-sm text-slate-500">
               <span>Subtotal</span>
