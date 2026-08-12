@@ -128,7 +128,7 @@ export function Pos() {
         </button>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_340px] lg:gap-5">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_420px] lg:gap-5">
       <Card className={`min-h-0 h-full flex-col ${mobileView === 'products' ? 'flex' : 'hidden'} lg:flex`}>
         <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Cliente">
@@ -203,7 +203,7 @@ export function Pos() {
         </div>
 
         <div className="mt-4 min-h-0 flex-1 overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
             {visibleItems.map((item) => {
               const outOfStock = tab === 'product' && item.track_inventory && item.stock_qty <= 0
               return (
@@ -211,13 +211,13 @@ export function Pos() {
                   key={item.id}
                   onClick={() => addToCart(item.id)}
                   disabled={outOfStock}
-                  className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 p-4 text-center transition hover:border-brand-400 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="flex flex-col items-center gap-1.5 rounded-xl border border-slate-200 p-2.5 text-center transition hover:border-brand-400 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-50 text-brand-600">
-                    {item.type === 'service' ? <Droplets size={20} /> : <PackageIcon size={20} />}
+                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-50 text-brand-600">
+                    {item.type === 'service' ? <Droplets size={15} /> : <PackageIcon size={15} />}
                   </span>
-                  <span className="text-sm font-semibold text-slate-800">{item.name}</span>
-                  <span className="text-sm font-bold text-brand-600">{formatMoney(item.price)}</span>
+                  <span className="text-xs font-semibold leading-tight text-slate-800">{item.name}</span>
+                  <span className="text-xs font-bold text-brand-600">{formatMoney(item.price)}</span>
                 </button>
               )
             })}
