@@ -4,14 +4,18 @@ import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Field, Input, Select } from '../components/ui/Input'
 import { EmptyState } from '../components/ui/EmptyState'
+import { Modal } from '../components/ui/Modal'
+import { SearchSelect } from '../components/ui/SearchSelect'
 import { useCatalogItems } from '../hooks/useCatalogItems'
-import { useClients, useClientVehicles } from '../hooks/useClients'
-import { useEmployees } from '../hooks/useEmployees'
-import { useBays } from '../hooks/useBays'
+import { useClients, useClientVehicles, useSaveClient } from '../hooks/useClients'
+import { useEmployees, useSaveEmployee } from '../hooks/useEmployees'
+import { useBays, useSaveBay } from '../hooks/useBays'
 import { useCreateSale, useSales, type SaleDraftItem } from '../hooks/useSales'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { formatDateTime } from '../lib/format'
 import type { CatalogItemType, PaymentMethod } from '../types/database'
+
+type QuickAddKind = 'client' | 'employee' | 'bay' | null
 
 export function Pos() {
   const formatMoney = useFormatCurrency()
@@ -22,11 +26,16 @@ export function Pos() {
   const { data: bays } = useBays(true)
   const { data: recentSales } = useSales(8)
   const createSale = useCreateSale()
+  const saveClient = useSaveClient()
+  const saveEmployee = useSaveEmployee()
+  const saveBay = useSaveBay()
 
   const [tab, setTab] = useState<CatalogItemType>('service')
   const [search, setSearch] = useState('')
   const [recentOpen, setRecentOpen] = useState(false)
   const [mobileView, setMobileView] = useState<'products' | 'cart'>('products')
+  const [quickAdd, setQuickAdd] = useState<QuickAddKind>(null)
+  const [quickAddName, setQuickAddName] = useState('')
 
   const visibleItems = useMemo(() => {
     const list = (tab === 'service' ? services : products) ?? []
@@ -104,6 +113,33 @@ export function Pos() {
     setTimeout(() => setSuccess(false), 2500)
   }
 
+  function openQuickAdd(kind: QuickAddKind) {
+    setQuickAddName('')
+    setQuickAdd(kind)
+  }
+
+  async function submitQuickAdd() {
+    if (!quickAddName.trim()) return
+    if (quickAdd === 'client') {
+      const created = await saveClient.mutateAsync({ full_name: quickAddName.trim() })
+      setClientId(created.id)
+      setVehicleId('')
+    } else if (quickAdd === 'employee') {
+      const created = await saveEmployee.mutateAsync({ full_name: quickAddName.trim(), role: 'lavador', commission_pct: 0, active: true })
+      setEmployeeId(created.id)
+    } else if (quickAdd === 'bay') {
+      const created = await saveBay.mutateAsync({ name: quickAddName.trim(), active: true, sort_order: 0 })
+      setBayId(created.id)
+    }
+    setQuickAdd(null)
+  }
+
+  const quickAddSaving = saveClient.isPending || saveEmployee.isPending || saveBay.isPending
+  const quickAddTitle =
+    quickAdd === 'client' ? 'Nuevo cliente' : quickAdd === 'employee' ? 'Nuevo empleado' : quickAdd === 'bay' ? 'Nueva bahía' : ''
+  const quickAddPlaceholder =
+    quickAdd === 'client' ? 'Nombre del cliente' : quickAdd === 'employee' ? 'Nombre del empleado' : 'Nombre de la bahía (ej. Bahía 1)'
+
   const cartCount = cart.reduce((sum, it) => sum + it.qty, 0)
 
   return (
@@ -136,40 +172,67 @@ export function Pos() {
       <Card className={`min-h-0 h-full flex-col ${mobileView === 'products' ? 'flex' : 'hidden'} lg:flex`}>
         <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Cliente">
-            <Select
-              value={clientId}
-              onChange={(e) => {
-                setClientId(e.target.value)
-                setVehicleId('')
-              }}
-            >
-              <option value="">Cliente general</option>
-              {clients?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.full_name}
-                </option>
-              ))}
-            </Select>
+            <div className="flex gap-1.5">
+              <SearchSelect
+                value={clientId}
+                onChange={(id) => {
+                  setClientId(id)
+                  setVehicleId('')
+                }}
+                options={(clients ?? []).map((c) => ({ id: c.id, label: c.full_name }))}
+                placeholder="Buscar cliente..."
+                emptyOptionLabel="Cliente general"
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => openQuickAdd('client')}
+                title="Agregar cliente"
+                className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl border border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
           </Field>
           <Field label="Empleado que atiende">
-            <Select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
-              <option value="">Sin asignar</option>
-              {employees?.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.full_name}
-                </option>
-              ))}
-            </Select>
+            <div className="flex gap-1.5">
+              <SearchSelect
+                value={employeeId}
+                onChange={setEmployeeId}
+                options={(employees ?? []).map((e) => ({ id: e.id, label: e.full_name }))}
+                placeholder="Buscar empleado..."
+                emptyOptionLabel="Sin asignar"
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={() => openQuickAdd('employee')}
+                title="Agregar empleado"
+                className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl border border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
           </Field>
           <Field label="Bahía">
-            <Select value={bayId} onChange={(e) => setBayId(e.target.value)}>
-              <option value="">Sin asignar</option>
-              {bays?.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
+            <div className="flex gap-1.5">
+              <Select value={bayId} onChange={(e) => setBayId(e.target.value)} className="flex-1">
+                <option value="">Sin asignar</option>
+                {bays?.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </Select>
+              <button
+                type="button"
+                onClick={() => openQuickAdd('bay')}
+                title="Agregar bahía"
+                className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl border border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
           </Field>
         </div>
         {clientId && (
@@ -356,6 +419,23 @@ export function Pos() {
         </div>
       </Card>
       </div>
+
+      <Modal open={quickAdd !== null} title={quickAddTitle} onClose={() => setQuickAdd(null)}>
+        <div className="grid gap-4">
+          <Field label="Nombre">
+            <Input
+              value={quickAddName}
+              onChange={(e) => setQuickAddName(e.target.value)}
+              placeholder={quickAddPlaceholder}
+              autoFocus
+              required
+            />
+          </Field>
+          <Button disabled={!quickAddName.trim() || quickAddSaving} onClick={submitQuickAdd}>
+            {quickAddSaving ? 'Guardando...' : 'Guardar'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

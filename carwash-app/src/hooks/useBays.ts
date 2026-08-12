@@ -30,12 +30,13 @@ export function useSaveBay() {
     mutationFn: async (input: Partial<Bay> & { id?: string }) => {
       const { id, ...rest } = input
       if (id) {
-        const { error } = await supabase.from('bays').update(rest).eq('id', id)
+        const { data, error } = await supabase.from('bays').update(rest).eq('id', id).select().single()
         if (error) throw error
-      } else {
-        const { error } = await supabase.from('bays').insert({ ...rest, business_id: businessId })
-        if (error) throw error
+        return data as Bay
       }
+      const { data, error } = await supabase.from('bays').insert({ ...rest, business_id: businessId }).select().single()
+      if (error) throw error
+      return data as Bay
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['bays'] }),
   })
