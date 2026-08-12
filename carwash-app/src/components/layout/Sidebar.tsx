@@ -9,6 +9,7 @@ import {
   Truck,
   UserRound,
   Wallet,
+  Receipt,
   BarChart3,
   Settings as SettingsIcon,
   LogOut,
@@ -27,7 +28,12 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; end?: bo
   { to: '/catalogo', label: 'Productos y servicios', icon: Package, permission: 'catalogo_ver' },
   { to: '/compras', label: 'Compras', icon: Truck, permission: 'compras' },
   { to: '/empleados', label: 'Empleados', icon: UserRound, permission: 'empleados' },
-  { to: '/caja', label: 'Gastos y caja', icon: Wallet, permission: 'caja' },
+  { to: '/caja', label: 'Caja', icon: Wallet, permission: 'caja' },
+]
+
+const expenseGroupLinks = [
+  { to: '/gastos/crear', label: 'Crear Gasto' },
+  { to: '/gastos/lista', label: 'Lista de Gastos' },
 ]
 
 const configGroupLinks = [
@@ -110,6 +116,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const visibleLinks = links.filter((link) => link.permission === null || can(link.permission))
   const canConfig = can('configuracion')
   const canReports = can('reportes')
+  const canCash = can('caja')
 
   return (
     <>
@@ -156,6 +163,16 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               {label}
             </NavLink>
           ))}
+
+          {canCash && (
+            <NavGroup
+              icon={<Receipt size={18} />}
+              label="Gastos"
+              basePath="/gastos"
+              links={expenseGroupLinks}
+              onNavigate={onClose}
+            />
+          )}
 
           {canReports && (
             <NavGroup

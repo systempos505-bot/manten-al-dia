@@ -12,7 +12,9 @@ import { Purchases } from './pages/Purchases'
 import { Appointments } from './pages/Appointments'
 import { Employees } from './pages/Employees'
 import { Pos } from './pages/Pos'
-import { CashAndExpenses } from './pages/CashAndExpenses'
+import { Cash } from './pages/Cash'
+import { CreateExpense } from './pages/expenses/CreateExpense'
+import { ExpensesList } from './pages/expenses/ExpensesList'
 import { SalesReport } from './pages/reports/SalesReport'
 import { ExpensesReport } from './pages/reports/ExpensesReport'
 import { AppointmentsReport } from './pages/reports/AppointmentsReport'
@@ -118,7 +120,23 @@ export default function App() {
             path="/caja"
             element={
               <RequirePermission permission="caja">
-                <CashAndExpenses />
+                <Cash />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/gastos/crear"
+            element={
+              <RequirePermission permission="caja">
+                <CreateExpense />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/gastos/lista"
+            element={
+              <RequirePermission permission="caja">
+                <ExpensesList />
               </RequirePermission>
             }
           />
