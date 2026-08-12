@@ -282,7 +282,7 @@ function VehicleTypesSection() {
   }
 
   return (
-    <>
+    <div>
       <Card className="p-0">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
           <div>
@@ -353,7 +353,7 @@ function VehicleTypesSection() {
           setConfirmDelete(null)
         }}
       />
-    </>
+    </div>
   )
 }
 
