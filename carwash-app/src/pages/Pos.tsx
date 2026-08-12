@@ -7,6 +7,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { useCatalogItems } from '../hooks/useCatalogItems'
 import { useClients, useClientVehicles } from '../hooks/useClients'
 import { useEmployees } from '../hooks/useEmployees'
+import { useBays } from '../hooks/useBays'
 import { useCreateSale, useSales, type SaleDraftItem } from '../hooks/useSales'
 import { useFormatCurrency } from '../hooks/useCurrency'
 import { formatDateTime } from '../lib/format'
@@ -18,6 +19,7 @@ export function Pos() {
   const { data: products } = useCatalogItems('product')
   const { data: clients } = useClients()
   const { data: employees } = useEmployees(true)
+  const { data: bays } = useBays(true)
   const { data: recentSales } = useSales(8)
   const createSale = useCreateSale()
 
@@ -43,6 +45,7 @@ export function Pos() {
   const { data: vehicles } = useClientVehicles(clientId || null)
   const [vehicleId, setVehicleId] = useState('')
   const [employeeId, setEmployeeId] = useState('')
+  const [bayId, setBayId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('efectivo')
   const [discount, setDiscount] = useState('0')
   const [cart, setCart] = useState<SaleDraftItem[]>([])
@@ -90,6 +93,7 @@ export function Pos() {
       vehicle_id: vehicleId || null,
       employee_id: employeeId || null,
       appointment_id: null,
+      bay_id: bayId || null,
       payment_method: paymentMethod,
       discount: Number(discount) || 0,
       items,
@@ -130,7 +134,7 @@ export function Pos() {
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_420px] lg:gap-5">
       <Card className={`min-h-0 h-full flex-col ${mobileView === 'products' ? 'flex' : 'hidden'} lg:flex`}>
-        <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-3">
           <Field label="Cliente">
             <Select
               value={clientId}
@@ -153,6 +157,16 @@ export function Pos() {
               {employees?.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.full_name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Bahía">
+            <Select value={bayId} onChange={(e) => setBayId(e.target.value)}>
+              <option value="">Sin asignar</option>
+              {bays?.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
                 </option>
               ))}
             </Select>

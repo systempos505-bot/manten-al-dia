@@ -255,6 +255,7 @@ export interface Sale {
   vehicle_id: string | null
   employee_id: string | null
   appointment_id: string | null
+  bay_id: string | null
   sale_date: string
   payment_method: PaymentMethod
   subtotal: number

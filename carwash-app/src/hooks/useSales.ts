@@ -17,6 +17,7 @@ export interface CreateSaleInput {
   vehicle_id: string | null
   employee_id: string | null
   appointment_id: string | null
+  bay_id: string | null
   payment_method: PaymentMethod
   discount: number
   items: SaleDraftItem[]
@@ -56,6 +57,7 @@ export function useCreateSale() {
           vehicle_id: input.vehicle_id,
           employee_id: input.employee_id,
           appointment_id: input.appointment_id,
+          bay_id: input.bay_id,
           payment_method: input.payment_method,
           subtotal,
           discount: input.discount,
