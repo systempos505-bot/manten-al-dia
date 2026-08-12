@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -12,6 +13,8 @@ import {
   Settings as SettingsIcon,
   LogOut,
   X,
+  ChevronDown,
+  ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
@@ -28,6 +31,11 @@ const links = [
   { to: '/configuracion', label: 'Configuración', icon: SettingsIcon, adminOnly: true },
 ]
 
+const userGroupLinks = [
+  { to: '/usuarios', label: 'Usuarios' },
+  { to: '/usuarios/roles', label: 'Roles' },
+]
+
 interface SidebarProps {
   open: boolean
   onClose: () => void
@@ -35,7 +43,10 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { businessName, user, isAdmin, signOut } = useAuth()
+  const location = useLocation()
   const visibleLinks = links.filter((link) => !link.adminOnly || isAdmin)
+  const userGroupActive = location.pathname.startsWith('/usuarios')
+  const [userGroupOpen, setUserGroupOpen] = useState(userGroupActive)
 
   return (
     <>
@@ -80,6 +91,44 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               {label}
             </NavLink>
           ))}
+
+          {isAdmin && (
+            <div>
+              <button
+                onClick={() => setUserGroupOpen((v) => !v)}
+                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                  userGroupActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <ShieldCheck size={18} />
+                <span className="flex-1 text-left">Gestión de usuarios</span>
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-150 ${userGroupOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {userGroupOpen && (
+                <div className="ml-4 mt-1 grid gap-1 border-l border-white/10 pl-3">
+                  {userGroupLinks.map(({ to, label }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      end
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        `rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
+                          isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                        }`
+                      }
+                    >
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </nav>
 
         <button

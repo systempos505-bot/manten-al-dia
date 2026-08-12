@@ -15,6 +15,8 @@ import { Pos } from './pages/Pos'
 import { CashAndExpenses } from './pages/CashAndExpenses'
 import { Reports } from './pages/Reports'
 import { Settings } from './pages/Settings'
+import { Users } from './pages/Users'
+import { Roles } from './pages/Roles'
 
 function Protected() {
   const { session, loading, businessId } = useAuth()
@@ -94,6 +96,22 @@ export default function App() {
             element={
               <RequireAdmin>
                 <Settings />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/usuarios"
+            element={
+              <RequireAdmin>
+                <Users />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="/usuarios/roles"
+            element={
+              <RequireAdmin>
+                <Roles />
               </RequireAdmin>
             }
           />
