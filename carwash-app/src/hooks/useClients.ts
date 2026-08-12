@@ -71,7 +71,7 @@ export function useSaveVehicle() {
   const { businessId } = useAuth()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (input: Partial<Vehicle> & { id?: string; client_id: string }) => {
+    mutationFn: async (input: Omit<Partial<Vehicle>, 'vehicle_type'> & { vehicle_type: string; id?: string; client_id: string }) => {
       const { id, ...rest } = input
       if (id) {
         const { error } = await supabase.from('vehicles').update(rest).eq('id', id)
