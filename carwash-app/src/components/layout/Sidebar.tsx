@@ -287,10 +287,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <button
           onClick={() => setCollapsed((v) => !v)}
           title={collapsed ? 'Mostrar menú completo' : 'Ocultar menú'}
-          className="hidden shrink-0 items-center justify-center gap-2 rounded-xl border border-white/10 py-2 text-xs font-semibold text-slate-300 hover:bg-white/5 hover:text-white md:flex"
+          className="hidden shrink-0 items-center justify-center rounded-xl border border-white/10 py-2 text-slate-300 hover:bg-white/5 hover:text-white md:flex"
         >
           {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
-          {!collapsed && 'Ocultar'}
         </button>
 
         <nav className="grid gap-1">
