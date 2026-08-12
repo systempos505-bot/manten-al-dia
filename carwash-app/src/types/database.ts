@@ -1,7 +1,14 @@
 export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'otro'
 export type VehicleType = 'auto' | 'camioneta' | 'moto' | 'otro'
 export type CatalogItemType = 'service' | 'product'
-export type AppointmentStatus = 'pendiente' | 'confirmada' | 'en_proceso' | 'completada' | 'cancelada'
+export type AppointmentStatus =
+  | 'pendiente'
+  | 'confirmada'
+  | 'en_espera'
+  | 'en_proceso'
+  | 'listo'
+  | 'completada'
+  | 'cancelada'
 export type SaleStatus = 'completada' | 'cancelada'
 export type CashMovementType = 'apertura' | 'ingreso' | 'egreso' | 'cierre' | 'ajuste'
 
@@ -116,12 +123,22 @@ export interface PurchaseItem {
   subtotal: number
 }
 
+export interface Bay {
+  id: string
+  business_id: string
+  name: string
+  active: boolean
+  sort_order: number
+  created_at: string
+}
+
 export interface Appointment {
   id: string
   business_id: string
   client_id: string | null
   vehicle_id: string | null
   employee_id: string | null
+  bay_id: string | null
   scheduled_at: string
   duration_min: number
   status: AppointmentStatus

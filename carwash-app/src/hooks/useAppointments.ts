@@ -7,6 +7,7 @@ export interface AppointmentWithRelations extends Appointment {
   client: { id: string; full_name: string; phone: string | null } | null
   vehicle: { id: string; brand: string | null; model: string | null; plate: string | null } | null
   employee: { id: string; full_name: string } | null
+  bay: { id: string; name: string } | null
   appointment_items: { item_id: string; qty: number; catalog_items: { name: string } | null }[]
 }
 
@@ -19,7 +20,7 @@ export function useAppointments(range?: { from: string; to: string }) {
       let query = supabase
         .from('appointments')
         .select(
-          '*, client:clients(id, full_name, phone), vehicle:vehicles(id, brand, model, plate), employee:employees(id, full_name), appointment_items(item_id, qty, catalog_items(name))',
+          '*, client:clients(id, full_name, phone), vehicle:vehicles(id, brand, model, plate), employee:employees(id, full_name), bay:bays(id, name), appointment_items(item_id, qty, catalog_items(name))',
         )
         .eq('business_id', businessId!)
         .order('scheduled_at', { ascending: true })
@@ -65,6 +66,17 @@ export function useSetAppointmentStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: AppointmentStatus }) => {
       const { error } = await supabase.from('appointments').update({ status }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['appointments'] }),
+  })
+}
+
+export function useSetAppointmentBay() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, bay_id }: { id: string; bay_id: string | null }) => {
+      const { error } = await supabase.from('appointments').update({ bay_id }).eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['appointments'] }),
