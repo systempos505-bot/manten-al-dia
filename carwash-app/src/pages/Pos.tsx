@@ -64,6 +64,11 @@ export function Pos() {
   const [receivedAmount, setReceivedAmount] = useState('')
   const [paymentCurrency, setPaymentCurrency] = useState(mainCurrency)
   const [changeCurrency, setChangeCurrency] = useState(mainCurrency)
+  const [multiPaymentOpen, setMultiPaymentOpen] = useState(false)
+  const [multiPayments, setMultiPayments] = useState<
+    { id: string; method: PaymentMethod; currency: string; amount: string }[]
+  >([])
+  const [multiChangeCurrency, setMultiChangeCurrency] = useState(mainCurrency)
 
   const subtotal = cart.reduce((sum, it) => sum + it.qty * it.unit_price, 0)
   const total = Math.max(subtotal - (Number(discount) || 0), 0)
@@ -81,6 +86,10 @@ export function Pos() {
   const receivedMain = toMain(Number(receivedAmount) || 0, paymentCurrency)
   const changeMain = receivedMain - total
   const changeDisplay = fromMain(Math.max(changeMain, 0), changeCurrency)
+
+  const multiPaidMain = multiPayments.reduce((sum, p) => sum + toMain(Number(p.amount) || 0, p.currency), 0)
+  const multiChangeMain = multiPaidMain - total
+  const multiChangeDisplay = fromMain(Math.max(multiChangeMain, 0), multiChangeCurrency)
 
   function addToCart(itemId: string) {
     const item = sellableItems.find((i) => i.id === itemId)
@@ -112,10 +121,36 @@ export function Pos() {
     setCart((prev) => prev.filter((p) => p.item_id !== itemId))
   }
 
+  function addMultiPayment() {
+    setMultiPayments((prev) => [
+      ...prev,
+      { id: Math.random().toString(36), method: 'efectivo', currency: mainCurrency, amount: '' },
+    ])
+  }
+
+  function removeMultiPayment(id: string) {
+    setMultiPayments((prev) => prev.filter((p) => p.id !== id))
+  }
+
+  function updateMultiPayment(id: string, field: keyof Omit<typeof multiPayments[0], 'id'>, value: string) {
+    setMultiPayments((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)))
+  }
+
   async function checkout() {
     if (cart.length === 0) return
     const employee = employees?.find((e) => e.id === employeeId)
     const items = cart.map((it) => ({ ...it, commission_pct: employee?.commission_pct ?? 0 }))
+
+    const payments =
+      paymentMethod === 'multiple'
+        ? multiPayments.map((p) => ({
+            method: p.method as PaymentMethod,
+            currency: p.currency,
+            amount: Number(p.amount) || 0,
+            amount_main: toMain(Number(p.amount) || 0, p.currency),
+          }))
+        : undefined
+
     await createSale.mutateAsync({
       client_id: clientId || null,
       vehicle_id: vehicleId || null,
@@ -125,10 +160,13 @@ export function Pos() {
       payment_method: paymentMethod,
       discount: Number(discount) || 0,
       items,
+      payments,
     })
     setCart([])
     setDiscount('0')
     setReceivedAmount('')
+    setMultiPayments([])
+    setMultiPaymentOpen(false)
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2500)
   }
@@ -413,6 +451,7 @@ export function Pos() {
                   <option value="tarjeta">Tarjeta</option>
                   <option value="transferencia">Transferencia</option>
                   <option value="otro">Otro</option>
+                  <option value="multiple">Múltiple</option>
                 </Select>
               </Field>
             </div>
@@ -481,13 +520,148 @@ export function Pos() {
               </div>
             )}
 
-            <Button disabled={cart.length === 0 || createSale.isPending} onClick={checkout} className="w-full">
-              {createSale.isPending ? 'Cobrando...' : 'Cobrar'}
-            </Button>
+            <div className="flex gap-2">
+              {paymentMethod === 'multiple' ? (
+                <Button
+                  disabled={cart.length === 0 || createSale.isPending || multiPaidMain < total}
+                  onClick={checkout}
+                  className="flex-1"
+                >
+                  {createSale.isPending ? 'Cobrando...' : 'Confirmar pago múltiple'}
+                </Button>
+              ) : (
+                <>
+                  <Button disabled={cart.length === 0 || createSale.isPending} onClick={checkout} className="flex-1">
+                    {createSale.isPending ? 'Cobrando...' : 'Cobrar'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={cart.length === 0}
+                    onClick={() => setMultiPaymentOpen(true)}
+                    className="flex-1"
+                  >
+                    Pago múltiple
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </Card>
       </div>
+
+      <Modal open={multiPaymentOpen} title="Pago múltiple" onClose={() => setMultiPaymentOpen(false)} wide>
+        <div className="grid gap-4">
+          <div className="text-sm text-slate-600">
+            Desglosá el pago en múltiples métodos o monedas. Total a cobrar: <span className="font-bold">{formatMoney(total)}</span>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto">
+            <div className="grid gap-3">
+              {multiPayments.length === 0 ? (
+                <p className="text-sm text-slate-400 py-6 text-center">Aún no hay pagos. Agregá uno para empezar.</p>
+              ) : (
+                multiPayments.map((p) => (
+                  <div key={p.id} className="flex gap-2 items-end border border-slate-200 rounded-lg p-3">
+                    <Field label="Método" className="flex-1 min-w-0">
+                      <Select value={p.method} onChange={(e) => updateMultiPayment(p.id, 'method', e.target.value)}>
+                        <option value="efectivo">Efectivo</option>
+                        <option value="tarjeta">Tarjeta</option>
+                        <option value="transferencia">Transferencia</option>
+                        <option value="otro">Otro</option>
+                      </Select>
+                    </Field>
+                    {secondaryCurrency && (
+                      <Field label="Moneda" className="w-24">
+                        <Select value={p.currency} onChange={(e) => updateMultiPayment(p.id, 'currency', e.target.value)}>
+                          <option value={mainCurrency}>{mainCurrency}</option>
+                          <option value={secondaryCurrency}>{secondaryCurrency}</option>
+                        </Select>
+                      </Field>
+                    )}
+                    <Field label="Monto" className="flex-1 min-w-0">
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={p.amount}
+                        onChange={(e) => updateMultiPayment(p.id, 'amount', e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </Field>
+                    <button
+                      onClick={() => removeMultiPayment(p.id)}
+                      className="h-[42px] w-[42px] shrink-0 grid place-items-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-3">
+            <Button variant="secondary" onClick={addMultiPayment} className="w-full">
+              <Plus size={16} /> Agregar pago
+            </Button>
+          </div>
+
+          <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Total a cobrar</span>
+              <span className="font-semibold">{formatMoney(total)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Total pagado (en {mainCurrency})</span>
+              <span className="font-semibold">{formatInCurrency(multiPaidMain, mainCurrency)}</span>
+            </div>
+            {multiPaidMain > 0 && (
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-sm">
+                <span className={`font-semibold ${multiChangeMain < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                  {multiChangeMain < 0 ? 'Falta' : 'Cambio a devolver'}
+                </span>
+                {multiChangeMain < 0 ? (
+                  <span className="font-bold text-red-600">{formatInCurrency(Math.abs(multiChangeMain), mainCurrency)}</span>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-emerald-600">{formatInCurrency(multiChangeDisplay, multiChangeCurrency)}</span>
+                    {secondaryCurrency && (
+                      <Select
+                        value={multiChangeCurrency}
+                        onChange={(e) => setMultiChangeCurrency(e.target.value)}
+                        className="w-20 text-xs"
+                      >
+                        <option value={mainCurrency}>{mainCurrency}</option>
+                        <option value={secondaryCurrency}>{secondaryCurrency}</option>
+                      </Select>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setMultiPaymentOpen(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={multiPayments.length === 0 || multiPaidMain < total}
+              onClick={() => {
+                setPaymentMethod('multiple')
+                setMultiPaymentOpen(false)
+              }}
+              className="flex-1"
+            >
+              Aplicar pago múltiple
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal open={quickAdd !== null} title={quickAddTitle} onClose={() => setQuickAdd(null)}>
         <div className="grid gap-4">

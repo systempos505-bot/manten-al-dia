@@ -1,4 +1,4 @@
-export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'otro'
+export type PaymentMethod = 'efectivo' | 'tarjeta' | 'transferencia' | 'otro' | 'multiple'
 export type VehicleType = 'auto' | 'camioneta' | 'moto' | 'otro'
 export type CatalogItemType = 'service' | 'product'
 export type AppointmentStatus =
@@ -279,6 +279,16 @@ export interface SaleItem {
   subtotal: number
   commission_pct: number
   commission_amount: number
+}
+
+export interface SalePayment {
+  id: string
+  sale_id: string
+  method: PaymentMethod
+  currency: string
+  amount: number
+  amount_main: number
+  created_at: string
 }
 
 export interface Shift {

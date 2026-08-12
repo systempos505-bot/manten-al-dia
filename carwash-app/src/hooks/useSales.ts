@@ -12,6 +12,13 @@ export interface SaleDraftItem {
   commission_pct: number
 }
 
+export interface SalePaymentDraft {
+  method: PaymentMethod
+  currency: string
+  amount: number
+  amount_main: number
+}
+
 export interface CreateSaleInput {
   client_id: string | null
   vehicle_id: string | null
@@ -21,6 +28,7 @@ export interface CreateSaleInput {
   payment_method: PaymentMethod
   discount: number
   items: SaleDraftItem[]
+  payments?: SalePaymentDraft[]
 }
 
 export function useSales(limit = 100) {
@@ -82,6 +90,18 @@ export function useCreateSale() {
       }))
       const { error: itemsError } = await supabase.from('sale_items').insert(rows)
       if (itemsError) throw itemsError
+
+      if (input.payments && input.payments.length > 0) {
+        const paymentRows = input.payments.map((p) => ({
+          sale_id: sale.id,
+          method: p.method,
+          currency: p.currency,
+          amount: p.amount,
+          amount_main: p.amount_main,
+        }))
+        const { error: paymentsError } = await supabase.from('sale_payments').insert(paymentRows)
+        if (paymentsError) throw paymentsError
+      }
 
       if (input.appointment_id) {
         await supabase.from('appointments').update({ status: 'completada' }).eq('id', input.appointment_id)
