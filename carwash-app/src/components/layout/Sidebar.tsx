@@ -20,38 +20,114 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import type { PermissionKey } from '../../types/database'
 
-const links: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; permission: PermissionKey | null }[] = [
-  { to: '/', label: 'Inicio', icon: LayoutDashboard, end: true, permission: null },
-  { to: '/pos', label: 'Punto de venta', icon: ShoppingCart, permission: 'pos' },
-  { to: '/citas', label: 'Citas', icon: CalendarClock, permission: 'citas' },
-  { to: '/clientes', label: 'Clientes', icon: Users, permission: 'clientes' },
-  { to: '/catalogo', label: 'Productos y servicios', icon: Package, permission: 'catalogo_ver' },
-  { to: '/compras', label: 'Compras', icon: Truck, permission: 'compras' },
-  { to: '/empleados', label: 'Empleados', icon: UserRound, permission: 'empleados' },
-  { to: '/caja', label: 'Caja', icon: Wallet, permission: 'caja' },
-]
+type NavItem =
+  | { kind: 'link'; to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; permission: PermissionKey | null }
+  | {
+      kind: 'group'
+      key: string
+      label: string
+      icon: typeof LayoutDashboard
+      basePath: string
+      permission: PermissionKey | null
+      adminOnly?: boolean
+      links: { to: string; label: string }[]
+    }
 
-const expenseGroupLinks = [
-  { to: '/gastos/crear', label: 'Crear Gasto' },
-  { to: '/gastos/lista', label: 'Lista de Gastos' },
-  { to: '/gastos/categorias', label: 'Categoría de Gastos' },
-]
-
-const configGroupLinks = [
-  { to: '/configuracion/empresa', label: 'Configuración de Empresa' },
-  { to: '/configuracion/tipos-vehiculo', label: 'Tipos de Vehículo' },
-]
-
-const reportGroupLinks = [
-  { to: '/reportes/ventas', label: 'Ventas' },
-  { to: '/reportes/gastos', label: 'Gastos' },
-  { to: '/reportes/citas', label: 'Citas' },
-  { to: '/reportes/inventario', label: 'Inventario' },
-]
-
-const userGroupLinks = [
-  { to: '/usuarios', label: 'Usuarios' },
-  { to: '/usuarios/roles', label: 'Roles' },
+const navItems: NavItem[] = [
+  { kind: 'link', to: '/', label: 'Inicio', icon: LayoutDashboard, end: true, permission: null },
+  { kind: 'link', to: '/pos', label: 'Punto de venta', icon: ShoppingCart, permission: 'pos' },
+  { kind: 'link', to: '/citas', label: 'Citas', icon: CalendarClock, permission: 'citas' },
+  {
+    kind: 'group',
+    key: 'clientes',
+    label: 'Clientes',
+    icon: Users,
+    basePath: '/clientes',
+    permission: 'clientes',
+    links: [
+      { to: '/clientes/crear', label: 'Crear Cliente' },
+      { to: '/clientes/lista', label: 'Lista de Clientes' },
+    ],
+  },
+  { kind: 'link', to: '/catalogo', label: 'Productos y servicios', icon: Package, permission: 'catalogo_ver' },
+  {
+    kind: 'group',
+    key: 'compras',
+    label: 'Compras',
+    icon: Truck,
+    basePath: '/compras',
+    permission: 'compras',
+    links: [
+      { to: '/compras/crear', label: 'Crear Compra' },
+      { to: '/compras/lista', label: 'Lista de Compras' },
+    ],
+  },
+  {
+    kind: 'group',
+    key: 'empleados',
+    label: 'Empleados',
+    icon: UserRound,
+    basePath: '/empleados',
+    permission: 'empleados',
+    links: [
+      { to: '/empleados/crear', label: 'Crear Empleado' },
+      { to: '/empleados/lista', label: 'Lista de Empleados' },
+      { to: '/empleados/turnos', label: 'Turnos' },
+    ],
+  },
+  { kind: 'link', to: '/caja', label: 'Caja', icon: Wallet, permission: 'caja' },
+  {
+    kind: 'group',
+    key: 'gastos',
+    label: 'Gastos',
+    icon: Receipt,
+    basePath: '/gastos',
+    permission: 'caja',
+    links: [
+      { to: '/gastos/crear', label: 'Crear Gasto' },
+      { to: '/gastos/lista', label: 'Lista de Gastos' },
+      { to: '/gastos/categorias', label: 'Categoría de Gastos' },
+    ],
+  },
+  {
+    kind: 'group',
+    key: 'reportes',
+    label: 'Reportes',
+    icon: BarChart3,
+    basePath: '/reportes',
+    permission: 'reportes',
+    links: [
+      { to: '/reportes/ventas', label: 'Ventas' },
+      { to: '/reportes/gastos', label: 'Gastos' },
+      { to: '/reportes/citas', label: 'Citas' },
+      { to: '/reportes/inventario', label: 'Inventario' },
+    ],
+  },
+  {
+    kind: 'group',
+    key: 'configuracion',
+    label: 'Configuración',
+    icon: SettingsIcon,
+    basePath: '/configuracion',
+    permission: 'configuracion',
+    links: [
+      { to: '/configuracion/empresa', label: 'Configuración de Empresa' },
+      { to: '/configuracion/tipos-vehiculo', label: 'Tipos de Vehículo' },
+    ],
+  },
+  {
+    kind: 'group',
+    key: 'usuarios',
+    label: 'Gestión de usuarios',
+    icon: ShieldCheck,
+    basePath: '/usuarios',
+    permission: null,
+    adminOnly: true,
+    links: [
+      { to: '/usuarios', label: 'Usuarios' },
+      { to: '/usuarios/roles', label: 'Roles' },
+    ],
+  },
 ]
 
 interface SidebarProps {
@@ -115,28 +191,20 @@ function NavGroup({
   )
 }
 
-const NAV_GROUPS = ['gastos', 'reportes', 'configuracion', 'usuarios'] as const
-type NavGroupKey = (typeof NAV_GROUPS)[number]
-
-const GROUP_BASE_PATHS: Record<NavGroupKey, string> = {
-  gastos: '/gastos',
-  reportes: '/reportes',
-  configuracion: '/configuracion',
-  usuarios: '/usuarios',
-}
-
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { businessName, user, isAdmin, can, signOut, logoUrl } = useAuth()
   const location = useLocation()
-  const visibleLinks = links.filter((link) => link.permission === null || can(link.permission))
-  const canConfig = can('configuracion')
-  const canReports = can('reportes')
-  const canCash = can('caja')
 
-  const activeGroup = NAV_GROUPS.find((key) => location.pathname.startsWith(GROUP_BASE_PATHS[key])) ?? null
-  const [openGroup, setOpenGroup] = useState<NavGroupKey | null>(activeGroup)
+  const visibleItems = navItems.filter((item) => {
+    if (item.kind === 'group' && item.adminOnly) return isAdmin
+    const permission = item.permission
+    return permission === null || can(permission)
+  })
 
-  function toggleGroup(key: NavGroupKey) {
+  const activeGroupKey = visibleItems.find((item) => item.kind === 'group' && location.pathname.startsWith(item.basePath))
+  const [openGroup, setOpenGroup] = useState<string | null>(activeGroupKey?.kind === 'group' ? activeGroupKey.key : null)
+
+  function toggleGroup(key: string) {
     setOpenGroup((current) => (current === key ? null : key))
   }
 
@@ -169,70 +237,40 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         <nav className="grid gap-1">
-          {visibleLinks.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
-                  isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
-          ))}
-
-          {canCash && (
-            <NavGroup
-              icon={<Receipt size={18} />}
-              label="Gastos"
-              basePath="/gastos"
-              links={expenseGroupLinks}
-              onNavigate={onClose}
-              isOpen={openGroup === 'gastos'}
-              onToggle={() => toggleGroup('gastos')}
-            />
-          )}
-
-          {canReports && (
-            <NavGroup
-              icon={<BarChart3 size={18} />}
-              label="Reportes"
-              basePath="/reportes"
-              links={reportGroupLinks}
-              onNavigate={onClose}
-              isOpen={openGroup === 'reportes'}
-              onToggle={() => toggleGroup('reportes')}
-            />
-          )}
-
-          {canConfig && (
-            <NavGroup
-              icon={<SettingsIcon size={18} />}
-              label="Configuración"
-              basePath="/configuracion"
-              links={configGroupLinks}
-              onNavigate={onClose}
-              isOpen={openGroup === 'configuracion'}
-              onToggle={() => toggleGroup('configuracion')}
-            />
-          )}
-
-          {isAdmin && (
-            <NavGroup
-              icon={<ShieldCheck size={18} />}
-              label="Gestión de usuarios"
-              basePath="/usuarios"
-              links={userGroupLinks}
-              onNavigate={onClose}
-              isOpen={openGroup === 'usuarios'}
-              onToggle={() => toggleGroup('usuarios')}
-            />
-          )}
+          {visibleItems.map((item) => {
+            if (item.kind === 'link') {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.end}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+                      isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                    }`
+                  }
+                >
+                  <Icon size={18} />
+                  {item.label}
+                </NavLink>
+              )
+            }
+            const Icon = item.icon
+            return (
+              <NavGroup
+                key={item.key}
+                icon={<Icon size={18} />}
+                label={item.label}
+                basePath={item.basePath}
+                links={item.links}
+                onNavigate={onClose}
+                isOpen={openGroup === item.key}
+                onToggle={() => toggleGroup(item.key)}
+              />
+            )
+          })}
         </nav>
 
         <button

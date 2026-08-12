@@ -6,11 +6,15 @@ import { AppShell } from './components/layout/AppShell'
 import { Login } from './pages/Login'
 import { SetupNeeded } from './pages/SetupNeeded'
 import { Dashboard } from './pages/Dashboard'
-import { Clients } from './pages/Clients'
+import { CreateClient } from './pages/clients/CreateClient'
+import { ClientsList } from './pages/clients/ClientsList'
 import { Catalog } from './pages/Catalog'
-import { Purchases } from './pages/Purchases'
+import { CreatePurchase } from './pages/purchases/CreatePurchase'
+import { PurchasesList } from './pages/purchases/PurchasesList'
 import { Appointments } from './pages/Appointments'
-import { Employees } from './pages/Employees'
+import { CreateEmployee } from './pages/employees/CreateEmployee'
+import { EmployeesList } from './pages/employees/EmployeesList'
+import { Shifts } from './pages/employees/Shifts'
 import { Pos } from './pages/Pos'
 import { Cash } from './pages/Cash'
 import { CreateExpense } from './pages/expenses/CreateExpense'
@@ -86,10 +90,18 @@ export default function App() {
             }
           />
           <Route
-            path="/clientes"
+            path="/clientes/crear"
             element={
               <RequirePermission permission="clientes">
-                <Clients />
+                <CreateClient />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/clientes/lista"
+            element={
+              <RequirePermission permission="clientes">
+                <ClientsList />
               </RequirePermission>
             }
           />
@@ -102,18 +114,42 @@ export default function App() {
             }
           />
           <Route
-            path="/compras"
+            path="/compras/crear"
             element={
               <RequirePermission permission="compras">
-                <Purchases />
+                <CreatePurchase />
               </RequirePermission>
             }
           />
           <Route
-            path="/empleados"
+            path="/compras/lista"
+            element={
+              <RequirePermission permission="compras">
+                <PurchasesList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/empleados/crear"
             element={
               <RequirePermission permission="empleados">
-                <Employees />
+                <CreateEmployee />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/empleados/lista"
+            element={
+              <RequirePermission permission="empleados">
+                <EmployeesList />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/empleados/turnos"
+            element={
+              <RequirePermission permission="empleados">
+                <Shifts />
               </RequirePermission>
             }
           />

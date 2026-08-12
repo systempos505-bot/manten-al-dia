@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Plus, Car, Phone, Trash2, Pencil } from 'lucide-react'
-import { PageHeader } from '../components/ui/PageHeader'
-import { Card } from '../components/ui/Card'
-import { Button } from '../components/ui/Button'
-import { Field, Input, Select, Textarea } from '../components/ui/Input'
-import { Modal } from '../components/ui/Modal'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { EmptyState } from '../components/ui/EmptyState'
-import { Loading } from '../components/ui/Loading'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { Card } from '../../components/ui/Card'
+import { Button } from '../../components/ui/Button'
+import { Field, Input, Select, Textarea } from '../../components/ui/Input'
+import { Modal } from '../../components/ui/Modal'
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { Loading } from '../../components/ui/Loading'
 import {
   useClients,
   useClientVehicles,
@@ -15,14 +15,14 @@ import {
   useDeleteClient,
   useSaveVehicle,
   useDeleteVehicle,
-} from '../hooks/useClients'
-import { useVehicleTypes } from '../hooks/useVehicleTypes'
-import type { Client, Vehicle } from '../types/database'
+} from '../../hooks/useClients'
+import { useVehicleTypes } from '../../hooks/useVehicleTypes'
+import type { Client, Vehicle } from '../../types/database'
 
 const emptyClient = { full_name: '', phone: '', email: '', notes: '' }
 const emptyVehicle = { vehicle_type: '', brand: '', model: '', color: '', plate: '', notes: '' }
 
-export function Clients() {
+export function ClientsList() {
   const [search, setSearch] = useState('')
   const { data: clients, isLoading } = useClients(search)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -42,11 +42,6 @@ export function Clients() {
   const saveVehicle = useSaveVehicle()
   const deleteVehicle = useDeleteVehicle()
   const [confirmDeleteVehicle, setConfirmDeleteVehicle] = useState<Vehicle | null>(null)
-
-  function openNewClient() {
-    setClientForm(emptyClient)
-    setClientModal({ open: true, editing: null })
-  }
 
   function openEditClient(c: Client) {
     setClientForm({ full_name: c.full_name, phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' })
@@ -84,15 +79,7 @@ export function Clients() {
 
   return (
     <div>
-      <PageHeader
-        title="Clientes"
-        description="Base de clientes y sus vehículos"
-        action={
-          <Button onClick={openNewClient}>
-            <Plus size={16} /> Nuevo cliente
-          </Button>
-        }
-      />
+      <PageHeader title="Lista de Clientes" description="Base de clientes y sus vehículos" />
 
       <div className="mb-4">
         <Input placeholder="Buscar cliente por nombre..." value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -103,7 +90,7 @@ export function Clients() {
           {isLoading ? (
             <Loading />
           ) : !clients || clients.length === 0 ? (
-            <EmptyState title="Aún no tienes clientes" description="Agrega tu primer cliente para comenzar." />
+            <EmptyState title="Aún no tienes clientes" description="Agrega tu primer cliente desde 'Crear Cliente'." />
           ) : (
             <ul className="divide-y divide-slate-100">
               {clients.map((c) => (
@@ -207,7 +194,7 @@ export function Clients() {
         </Card>
       </div>
 
-      <Modal open={clientModal.open} title={clientModal.editing ? 'Editar cliente' : 'Nuevo cliente'} onClose={() => setClientModal({ open: false, editing: null })}>
+      <Modal open={clientModal.open} title="Editar cliente" onClose={() => setClientModal({ open: false, editing: null })}>
         <div className="grid gap-4">
           <Field label="Nombre completo">
             <Input value={clientForm.full_name} onChange={(e) => setClientForm({ ...clientForm, full_name: e.target.value })} required />
