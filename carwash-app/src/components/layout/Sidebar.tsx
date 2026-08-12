@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -28,12 +28,6 @@ const links: { to: string; label: string; icon: typeof LayoutDashboard; end?: bo
   { to: '/compras', label: 'Compras', icon: Truck, permission: 'compras' },
   { to: '/empleados', label: 'Empleados', icon: UserRound, permission: 'empleados' },
   { to: '/caja', label: 'Gastos y caja', icon: Wallet, permission: 'caja' },
-  { to: '/reportes', label: 'Reportes', icon: BarChart3, permission: 'reportes' },
-]
-
-const userGroupLinks = [
-  { to: '/usuarios', label: 'Usuarios' },
-  { to: '/usuarios/roles', label: 'Roles' },
 ]
 
 const configGroupLinks = [
@@ -41,22 +35,81 @@ const configGroupLinks = [
   { to: '/configuracion/tipos-vehiculo', label: 'Tipos de Vehículo' },
 ]
 
+const reportGroupLinks = [
+  { to: '/reportes/ventas', label: 'Ventas' },
+  { to: '/reportes/gastos', label: 'Gastos' },
+  { to: '/reportes/citas', label: 'Citas' },
+  { to: '/reportes/inventario', label: 'Inventario' },
+]
+
+const userGroupLinks = [
+  { to: '/usuarios', label: 'Usuarios' },
+  { to: '/usuarios/roles', label: 'Roles' },
+]
+
 interface SidebarProps {
   open: boolean
   onClose: () => void
 }
 
+function NavGroup({
+  icon,
+  label,
+  basePath,
+  links: groupLinks,
+  onNavigate,
+}: {
+  icon: ReactNode
+  label: string
+  basePath: string
+  links: { to: string; label: string }[]
+  onNavigate: () => void
+}) {
+  const location = useLocation()
+  const active = location.pathname.startsWith(basePath)
+  const [open, setOpen] = useState(active)
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
+          active ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+        }`}
+      >
+        {icon}
+        <span className="flex-1 text-left">{label}</span>
+        <ChevronDown size={16} className={`transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="ml-4 mt-1 grid gap-1 border-l border-white/10 pl-3">
+          {groupLinks.map(({ to, label: linkLabel }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                `rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
+                  isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                }`
+              }
+            >
+              {linkLabel}
+            </NavLink>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { businessName, user, isAdmin, can, signOut, logoUrl } = useAuth()
-  const location = useLocation()
   const visibleLinks = links.filter((link) => link.permission === null || can(link.permission))
   const canConfig = can('configuracion')
-
-  const userGroupActive = location.pathname.startsWith('/usuarios')
-  const [userGroupOpen, setUserGroupOpen] = useState(userGroupActive)
-
-  const configGroupActive = location.pathname.startsWith('/configuracion')
-  const [configGroupOpen, setConfigGroupOpen] = useState(configGroupActive)
+  const canReports = can('reportes')
 
   return (
     <>
@@ -104,80 +157,34 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </NavLink>
           ))}
 
-          {canConfig && (
-            <div>
-              <button
-                onClick={() => setConfigGroupOpen((v) => !v)}
-                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
-                  configGroupActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <SettingsIcon size={18} />
-                <span className="flex-1 text-left">Configuración</span>
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform duration-150 ${configGroupOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
+          {canReports && (
+            <NavGroup
+              icon={<BarChart3 size={18} />}
+              label="Reportes"
+              basePath="/reportes"
+              links={reportGroupLinks}
+              onNavigate={onClose}
+            />
+          )}
 
-              {configGroupOpen && (
-                <div className="ml-4 mt-1 grid gap-1 border-l border-white/10 pl-3">
-                  {configGroupLinks.map(({ to, label }) => (
-                    <NavLink
-                      key={to}
-                      to={to}
-                      end
-                      onClick={onClose}
-                      className={({ isActive }) =>
-                        `rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
-                          isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                        }`
-                      }
-                    >
-                      {label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
+          {canConfig && (
+            <NavGroup
+              icon={<SettingsIcon size={18} />}
+              label="Configuración"
+              basePath="/configuracion"
+              links={configGroupLinks}
+              onNavigate={onClose}
+            />
           )}
 
           {isAdmin && (
-            <div>
-              <button
-                onClick={() => setUserGroupOpen((v) => !v)}
-                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold transition ${
-                  userGroupActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <ShieldCheck size={18} />
-                <span className="flex-1 text-left">Gestión de usuarios</span>
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform duration-150 ${userGroupOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {userGroupOpen && (
-                <div className="ml-4 mt-1 grid gap-1 border-l border-white/10 pl-3">
-                  {userGroupLinks.map(({ to, label }) => (
-                    <NavLink
-                      key={to}
-                      to={to}
-                      end
-                      onClick={onClose}
-                      className={({ isActive }) =>
-                        `rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
-                          isActive ? 'bg-white/15 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                        }`
-                      }
-                    >
-                      {label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
+            <NavGroup
+              icon={<ShieldCheck size={18} />}
+              label="Gestión de usuarios"
+              basePath="/usuarios"
+              links={userGroupLinks}
+              onNavigate={onClose}
+            />
           )}
         </nav>
 

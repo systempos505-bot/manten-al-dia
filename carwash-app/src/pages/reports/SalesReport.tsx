@@ -1,61 +1,34 @@
-import { useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { PageHeader } from '../components/ui/PageHeader'
-import { Card } from '../components/ui/Card'
-import { Loading } from '../components/ui/Loading'
-import { EmptyState } from '../components/ui/EmptyState'
-import { useDashboardData } from '../hooks/useDashboard'
-import { useFormatCurrency } from '../hooks/useCurrency'
-import { formatDate } from '../lib/format'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { Card } from '../../components/ui/Card'
+import { Loading } from '../../components/ui/Loading'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { RangeSwitcher } from '../../components/ui/RangeSwitcher'
+import { useDashboardData } from '../../hooks/useDashboard'
+import { useFormatCurrency } from '../../hooks/useCurrency'
+import { useReportRange } from '../../hooks/useReportRange'
+import { formatDate } from '../../lib/format'
 
-const ranges = [
-  { label: '7 días', days: 7 },
-  { label: '30 días', days: 30 },
-  { label: '90 días', days: 90 },
-]
-
-export function Reports() {
+export function SalesReport() {
   const formatMoney = useFormatCurrency()
-  const [days, setDays] = useState(30)
-  const range = useMemo(() => {
-    const from = new Date()
-    from.setDate(from.getDate() - (days - 1))
-    from.setHours(0, 0, 0, 0)
-    const to = new Date()
-    to.setHours(23, 59, 59, 999)
-    return { from: from.toISOString(), to: to.toISOString() }
-  }, [days])
-
+  const { days, setDays, range } = useReportRange()
   const { data, isLoading } = useDashboardData(range)
 
   return (
     <div>
-      <PageHeader title="Reportes" description="Desempeño del negocio en el periodo seleccionado" />
+      <PageHeader title="Reporte de Ventas" description="Desempeño de ventas en el periodo seleccionado" />
 
-      <div className="mb-5 inline-flex gap-1 rounded-xl bg-slate-200/70 p-1">
-        {ranges.map((r) => (
-          <button
-            key={r.days}
-            onClick={() => setDays(r.days)}
-            className={`rounded-lg px-4 py-2 text-sm font-bold transition ${days === r.days ? 'bg-white shadow text-slate-900' : 'text-slate-600'}`}
-          >
-            {r.label}
-          </button>
-        ))}
-      </div>
+      <RangeSwitcher days={days} onChange={setDays} />
 
       {isLoading || !data ? (
         <Loading />
       ) : (
         <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card>
               <p className="text-xs font-bold uppercase text-slate-500">Ventas totales</p>
               <p className="mt-1 text-2xl font-extrabold text-slate-900">{formatMoney(data.totalSales)}</p>
-            </Card>
-            <Card>
-              <p className="text-xs font-bold uppercase text-slate-500">Gastos totales</p>
-              <p className="mt-1 text-2xl font-extrabold text-slate-900">{formatMoney(data.totalExpenses)}</p>
+              <p className="text-xs text-slate-400">{data.salesCount} ticket(s)</p>
             </Card>
             <Card>
               <p className="text-xs font-bold uppercase text-slate-500">Utilidad neta</p>
@@ -122,22 +95,6 @@ export function Reports() {
               )}
             </Card>
           </div>
-
-          <Card className="p-0">
-            <p className="border-b border-slate-100 px-5 py-3 font-bold text-slate-800">Gastos por categoría</p>
-            {data.byExpenseCategory.length === 0 ? (
-              <EmptyState title="Sin gastos en el periodo" />
-            ) : (
-              <ul className="divide-y divide-slate-100">
-                {data.byExpenseCategory.map((c) => (
-                  <li key={c.category} className="flex items-center justify-between px-5 py-3 text-sm">
-                    <span className="font-semibold text-slate-800">{c.category}</span>
-                    <span className="font-bold">{formatMoney(c.total)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
         </div>
       )}
     </div>

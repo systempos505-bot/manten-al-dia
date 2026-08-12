@@ -13,7 +13,10 @@ import { Appointments } from './pages/Appointments'
 import { Employees } from './pages/Employees'
 import { Pos } from './pages/Pos'
 import { CashAndExpenses } from './pages/CashAndExpenses'
-import { Reports } from './pages/Reports'
+import { SalesReport } from './pages/reports/SalesReport'
+import { ExpensesReport } from './pages/reports/ExpensesReport'
+import { AppointmentsReport } from './pages/reports/AppointmentsReport'
+import { InventoryReport } from './pages/reports/InventoryReport'
 import { CompanySettings } from './pages/CompanySettings'
 import { VehicleTypes } from './pages/VehicleTypes'
 import { Users } from './pages/Users'
@@ -120,10 +123,34 @@ export default function App() {
             }
           />
           <Route
-            path="/reportes"
+            path="/reportes/ventas"
             element={
               <RequirePermission permission="reportes">
-                <Reports />
+                <SalesReport />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/reportes/gastos"
+            element={
+              <RequirePermission permission="reportes">
+                <ExpensesReport />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/reportes/citas"
+            element={
+              <RequirePermission permission="reportes">
+                <AppointmentsReport />
+              </RequirePermission>
+            }
+          />
+          <Route
+            path="/reportes/inventario"
+            element={
+              <RequirePermission permission="reportes">
+                <InventoryReport />
               </RequirePermission>
             }
           />
