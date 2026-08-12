@@ -261,38 +261,39 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {open && <div className="fixed inset-0 z-30 bg-slate-900/50 md:hidden" onClick={onClose} />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 max-w-[85vw] shrink-0 flex-col gap-6 overflow-y-auto bg-gradient-to-b from-slate-900 to-slate-800 p-5 text-white transition-all duration-200 ease-out md:static md:z-auto md:max-w-none md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 w-72 max-w-[85vw] shrink-0 bg-gradient-to-b from-slate-900 to-slate-800 text-white transition-all duration-200 ease-out md:relative md:z-auto md:max-w-none md:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
-        } ${collapsed ? 'md:w-20 md:px-2.5' : 'md:w-64'}`}
+        } ${collapsed ? 'md:w-20' : 'md:w-64'}`}
       >
-        <div className={`flex items-start justify-between gap-2 ${collapsed ? 'md:justify-center' : ''}`}>
-          <div className={`flex min-w-0 items-center gap-3 ${collapsed ? 'md:justify-center' : ''}`}>
-            <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 text-2xl">
-              {logoUrl ? <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" /> : '🚿'}
-            </div>
-            <div className={`min-w-0 ${collapsed ? 'md:hidden' : ''}`}>
-              <p className="truncate font-bold leading-tight">{businessName || 'Auto Lavado'}</p>
-              <p className="truncate text-xs text-slate-400">{user?.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="shrink-0 rounded-lg p-1.5 text-slate-300 hover:bg-white/10 md:hidden"
-            aria-label="Cerrar menú"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
         <button
           onClick={() => setCollapsed((v) => !v)}
           title={collapsed ? 'Mostrar menú completo' : 'Ocultar menú'}
-          className="hidden shrink-0 items-center justify-center rounded-xl border border-white/10 py-2 text-slate-300 hover:bg-white/5 hover:text-white md:flex"
+          className="absolute -right-3 top-9 z-10 hidden h-7 w-7 items-center justify-center rounded-full border border-white/10 bg-slate-800 text-slate-300 shadow-md hover:bg-slate-700 hover:text-white md:flex"
         >
-          {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+          {collapsed ? <ChevronsRight size={14} /> : <ChevronsLeft size={14} />}
         </button>
 
-        <nav className="grid gap-1">
+        <div className={`flex h-full flex-col gap-6 overflow-y-auto p-5 ${collapsed ? 'md:px-2.5' : ''}`}>
+          <div className={`flex items-start justify-between gap-2 ${collapsed ? 'md:justify-center' : ''}`}>
+            <div className={`flex min-w-0 items-center gap-3 ${collapsed ? 'md:justify-center' : ''}`}>
+              <div className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-2xl bg-white/10 text-2xl">
+                {logoUrl ? <img src={logoUrl} alt="Logo" className="h-full w-full object-cover" /> : '🚿'}
+              </div>
+              <div className={`min-w-0 ${collapsed ? 'md:hidden' : ''}`}>
+                <p className="truncate font-bold leading-tight">{businessName || 'Auto Lavado'}</p>
+                <p className="truncate text-xs text-slate-400">{user?.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="shrink-0 rounded-lg p-1.5 text-slate-300 hover:bg-white/10 md:hidden"
+              aria-label="Cerrar menú"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <nav className="grid gap-1">
           {visibleItems.map((item) => {
             if (item.kind === 'link') {
               const Icon = item.icon
@@ -330,18 +331,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               />
             )
           })}
-        </nav>
+          </nav>
 
-        <button
-          onClick={() => signOut()}
-          title="Cerrar sesión"
-          className={`mt-auto flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white ${
-            collapsed ? 'md:justify-center md:px-2.5' : ''
-          }`}
-        >
-          <LogOut size={18} />
-          <span className={collapsed ? 'md:hidden' : ''}>Cerrar sesión</span>
-        </button>
+          <button
+            onClick={() => signOut()}
+            title="Cerrar sesión"
+            className={`mt-auto flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white ${
+              collapsed ? 'md:justify-center md:px-2.5' : ''
+            }`}
+          >
+            <LogOut size={18} />
+            <span className={collapsed ? 'md:hidden' : ''}>Cerrar sesión</span>
+          </button>
+        </div>
       </aside>
     </>
   )
